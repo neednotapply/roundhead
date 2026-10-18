@@ -16,7 +16,7 @@ namespace CupRounds
     /// Runs inside ROUNDS while Roundhead plays: waits until ROUNDS (and any card mods) have loaded every card,
     /// then serves card lists, card renders, card math and the player's ROUNDS look to Cuphead over localhost.
     /// </summary>
-    [BepInPlugin("gg.melty.roundhead.cardengine", "Roundhead card engine", "0.1.2")]
+    [BepInPlugin("gg.melty.roundhead.cardengine", "Roundhead card engine", "0.1.3")]
     public class EnginePlugin : BaseUnityPlugin
     {
         public static EnginePlugin I;

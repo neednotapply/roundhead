@@ -171,7 +171,7 @@ namespace CupRounds.Launcher
         {
             code = code.Trim();
             string body;
-            using (var w = Thunderstore.Web()) body = w.DownloadString(string.Format(Thunderstore.ProfileApi, Uri.EscapeDataString(code)));
+            body = Thunderstore.GetString(string.Format(Thunderstore.ProfileApi, Uri.EscapeDataString(code)), 60000);
             const string prefix = "#r2modman";
             if (body.StartsWith(prefix)) body = body.Substring(prefix.Length);
             byte[] zipBytes = Convert.FromBase64String(body.Trim());
