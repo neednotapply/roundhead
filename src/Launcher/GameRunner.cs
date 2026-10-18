@@ -113,6 +113,7 @@ namespace CupRounds.Launcher
             string cupheadExe = Path.Combine(Paths.Cuphead, "Cuphead.exe");
             if (!File.Exists(roundsExe)) throw new Exception("ROUNDS was not found at " + Paths.Rounds);
             if (!File.Exists(cupheadExe)) throw new Exception("Cuphead was not found at " + Paths.Cuphead);
+            CheckRoundsBranch();
             if (Running(cupheadExe).Length > 0) throw new Exception("Cuphead is already open. Close it, then press Play.");
             if (Running(roundsExe).Length > 0 && !EngineReady()) throw new Exception("ROUNDS is already open. Close it, then press Play (Roundhead starts its own ROUNDS in the background).");
 
@@ -174,6 +175,22 @@ namespace CupRounds.Launcher
             StopRounds();
         }
 
+        /// <summary>
+        /// The card engine and Thunderstore's card mods are built for ROUNDS's "old-rounds-for-mods" Steam branch (Unity 2018.4).
+        /// ROUNDS's current branch (a newer Unity) lacks the types they hook, so the engine never gets ready and Cuphead plays
+        /// without its ROUNDS players; say so before anything starts.
+        /// </summary>
+        private static void CheckRoundsBranch()
+        {
+            string player = Path.Combine(Paths.Rounds, "UnityPlayer.dll");
+            string version;
+            try { version = FileVersionInfo.GetVersionInfo(player).FileVersion ?? ""; }
+            catch { return; }
+            Log.Write("ROUNDS runs on Unity " + version);
+            if (version.Length == 0 || version.StartsWith("2018.")) return;
+            throw new WrongRoundsVersion();
+        }
+
         public static void StopRounds()
         {
             Process p = RoundsProc;
@@ -192,5 +209,11 @@ namespace CupRounds.Launcher
             }
             catch (Exception e) { Log.Write("Could not close ROUNDS: " + e.Message); }
         }
+    }
+
+    public class WrongRoundsVersion : Exception
+    {
+        public WrongRoundsVersion() : base("Roundhead needs ROUNDS's \"old-rounds-for-mods\" version, the one Thunderstore card mods are made for, and your ROUNDS is the newer one.\n\n"
+            + "In Steam: right-click ROUNDS > Properties > Betas, choose \"old-rounds-for-mods\", wait for the small update to finish, then press PLAY again.") { }
     }
 }

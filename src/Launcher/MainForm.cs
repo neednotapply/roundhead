@@ -374,13 +374,14 @@ namespace CupRounds.Launcher
             new Thread(() =>
             {
                 string err = null;
+                bool wrongRounds = false;
                 try
                 {
                     // While playing, the launcher steps out of the way entirely (no window, no taskbar button).
                     Ui(() => Hide());
                     GameRunner.Play();
                 }
-                catch (Exception e) { err = e.Message; Log("Could not play: " + e.Message); GameRunner.StopRounds(); }
+                catch (Exception e) { err = e.Message; wrongRounds = e is WrongRoundsVersion; Log("Could not play: " + e.Message); GameRunner.StopRounds(); }
                 Ui(() =>
                 {
                     busy = false;
@@ -388,9 +389,16 @@ namespace CupRounds.Launcher
                     playBtn.Text = "PLAY";
                     if (err != null)
                     {
+                        // Test runs (autoplay) start invisible; a problem must still be seen.
+                        Opacity = 1;
+                        ShowInTaskbar = true;
                         Show();
                         WindowState = FormWindowState.Normal;
-                        status.Text = "Problem: " + err;
+                        Activate();
+                        status.Text = "Problem: " + err.Replace("\n\n", " ");
+                        if (wrongRounds && MessageBox.Show(this, err + "\n\nOpen ROUNDS in your Steam library now?", "Roundhead: switch ROUNDS's version",
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                            try { System.Diagnostics.Process.Start("steam://nav/games/details/" + GameRunner.RoundsAppId); } catch { }
                     }
                     else Close();
                 });
