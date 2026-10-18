@@ -789,8 +789,8 @@
     {
       "id": "e_target_remote",
       "target": "ROUNDS RemoteControl.Update",
-      "kind": "prefix",
-      "does": "Remote bullets steer toward the Cuphead cursor, or the Cuphead aim, instead of the hidden ROUNDS window's mouse",
+      "kind": "transpiler",
+      "does": "ROUNDS's own Update runs; only its steering direction is replaced: Remote bullets steer toward the Cuphead cursor, or the Cuphead aim, instead of the hidden ROUNDS window's mouse",
       "symbol": "ArenaTargetPatches.SteerWithCuphead",
       "effects": "none"
     },

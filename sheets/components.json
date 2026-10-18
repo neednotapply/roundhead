@@ -63,7 +63,7 @@
       "zipPath": "managed/third-party-notices/",
       "to": "{managed}/third-party-notices",
       "license": "texts",
-      "built": "copied from BepInEx and UnityDoorstop"
+      "built": "license texts of BepInEx, HarmonyX, MonoMod, Mono.Cecil and UnityDoorstop, plus NOTICE.txt (package.py stops if one is missing)"
     },
     {
       "id": "readme",
