@@ -40,7 +40,7 @@ TF_LIGHT, TF_BOSS, TF_NOSTATUS = 1, 2, 4
 S_PRESENT, S_MOVEX, S_MOVEY, S_AIMX, S_AIMY, S_JUMPHELD, S_JUMPS, S_SHOOTHELD, S_BLOCKS = 0, 4, 8, 12, 16, 20, 24, 28, 32
 S_SHOOTS = 56
 U_CURX, U_CURY, U_CURON, U_DOWN, U_SWITCH = 0, 4, 8, 12, 16
-EV_DAMAGE, EV_SPAWN, EV_BLOCKED = 1, 7, 8
+EV_DAMAGE, EV_SPAWN, EV_BLOCKED, EV_PARRY = 1, 7, 8, 9
 R_HITWRITE, R_HITS, HIT_SIZE, HIT_RING = R + 44, R + 1024, 32, 128
 Q_X, Q_Y, Q_HP, Q_MAXHP, Q_DEAD, Q_BLOCKS, Q_CARDS, Q_LIFE, Q_PRESENT = 4, 8, 20, 24, 28, 40, 56, 60, 0
 FX_OFF = int(os.environ.get('PROBE_FX_OFF', '5120'))   # R_FxWrite; 0 = an engine without the effect ring
@@ -84,6 +84,7 @@ DEFAULT = dict(
     hurt=None, hurt_amount=50.0,   # times of an EvDamage (hurt first, for lifesteal checks)
     blocked_hit=None,     # times of an EvBlockedHit (inside the block window)
     cursor=None,          # [x, y]: U_CursorOn with the Cuphead cursor there (Remote)
+    parry=None,           # times of an EvParry (a Cuphead parry landed: block refill and bounce)
     switch=None,          # times of a weapon-switch press (PCE Laser)
     down_hold=None,       # [t0, t1] with U_DownHeld (PCE Super Jump)
     jump=None,            # times of a jump press
@@ -801,7 +802,7 @@ class Bench:
         held = ri(rslot(0) + Q_CARDS)
         rec = Recorder(self, s, ids2g, start)
         s0, x0 = slot(0), slot2(0)
-        st_ = {'blocked': set(), 'hurt': set(), 'bh': set(), 'sw': set(), 'jump': set(), 'jumpUntil': -1.0, 'level': False, 'nextProbe': 0.0, 'clickWas': False}
+        st_ = {'blocked': set(), 'hurt': set(), 'bh': set(), 'sw': set(), 'jump': set(), 'parry': set(), 'jumpUntil': -1.0, 'level': False, 'nextProbe': 0.0, 'clickWas': False}
         aim_pts = {'A': (A_BOX[0], (s['a_y'] if s['a_y'] is not None else A_BOX[1])), 'Bm': (BM_BOX[0], BM_BOX[1])}
 
         def once(key, times, t, act):
@@ -844,6 +845,7 @@ class Bench:
             once('blocked', s['blocks'], t, blk)
             once('hurt', s['hurt'], t, lambda bt: (self.post_event(EV_DAMAGE, 0, s['hurt_amount'], 0.0, 1.0, 0.0), rec.hurt_at.append(t)))
             once('bh', s['blocked_hit'], t, lambda bt: self.post_event(EV_BLOCKED, 0, HEALTH_PER_HEART, -1.0, 0.0))
+            once('parry', s['parry'], t, lambda bt: self.post_event(EV_PARRY, 0, 1.0))
             def sw(bt): self.counters['switch'] += 1; wi(x0 + U_SWITCH, self.counters['switch'])
             once('sw', s['switch'], t, sw)
             def jp(bt): self.counters['jump'] += 1; wi(s0 + S_JUMPS, self.counters['jump']); st_['jumpUntil'] = t + 0.35
@@ -1074,6 +1076,16 @@ def plan_for(cards, quick, combo_table):
         return [(sc['label'], sc, sig) for sc in (scs[:1] if quick else scs)]
     return [('', S('', [hits(1)]), 'no table entry: damage should reach the enemy (hits > 0)')]
 
+# Not a card: a Cuphead parry (EvParry) refills ROUNDS's block and bounces the player with ROUNDS's own jump. Without the
+# refill the block pressed at 2.5 s falls in the 4 s cooldown of the one at 1.0 s; the bounce lifts the player off the floor.
+def bounce(dy):
+    def fn(r, ctx):
+        p = r['player']
+        return p['peakY'] - p['start'][1] >= dy, 'peak %.0f above the start' % (p['peakY'] - p['start'][1])
+    return Check('bounce: peak >= start + %g' % dy, fn)
+
+PARRY = S('parry at 2.0 s between blocks at 1.0 and 2.5 s', [blocks(2, before=3.0), bounce(60)], blocks=[1.0, 2.5], parry=[2.0], shoot=False)
+
 def print_table():
     print('%-36s %s' % ('CARD', 'EXPECTED SIGNALS  ||  CHECKS'))
     for n in sorted(EXPECT):
@@ -1100,6 +1112,7 @@ def main():
     ap.add_argument('--quick', action='store_true', help='only the first scenario of each card')
     ap.add_argument('--stop-on-broken', action='store_true', help='stop when the bench looks broken')
     ap.add_argument('--list', action='store_true', help='print the expectations table and exit')
+    ap.add_argument('--parry', action='store_true', help='also run the parry check (EvParry: block refill and bounce, no card)')
     args = ap.parse_args()
     if args.list or not args.out:
         print_table(); return
@@ -1134,7 +1147,7 @@ def main():
         jobs.append(n.split('+'))
     if args.combos:
         jobs += [n.split('+') for n, sig, scs in COMBOS]
-    if not args.cards and not args.combos:
+    if not args.cards and not args.combos and not args.parry:
         jobs = [[c['id']] for c in cat['cards']]
 
     warnings, results = [], []
@@ -1150,6 +1163,15 @@ def main():
     base_hits = max(1, base['hits']['total'])
     zero_streak, runs = 0, 0
     out_doc = lambda: dict(control=strip(base), results=[strip(r) for r in results], warnings=warnings, summary=summarize(results))
+
+    if args.parry:
+        r = bench.run([], PARRY, PARRY['label'])
+        r['verdict'], r['checks'] = judge(r, PARRY['checks'] + [no_exc()], ctx)
+        r['name'] = 'parry'
+        r['signals'] = 'block refill and bounce'
+        results.append(r)
+        fails = [c for c in r['checks'] if not c[0]]
+        print('%-4s %-40s %s' % (r['verdict'], 'parry', '; '.join('%s: %s' % (c[1], c[2]) for c in r['checks'])), flush=True)
 
     stop = False
     for cards in jobs:

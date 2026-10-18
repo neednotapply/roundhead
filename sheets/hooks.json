@@ -51,6 +51,22 @@
       "effects": "block_cooldown"
     },
     {
+      "id": "h_plane_init",
+      "target": "PlanePlayerController.LevelInit",
+      "kind": "postfix",
+      "does": "plane levels: the plane's sprites stay off and the player flies as their real ROUNDS character (PlaneBlob: the ROUNDS puppet hovering where the plane is, gun forward, legs dangling behind, following the plane's shrink, blink and visibility, parry-pink while parrying); the plane's controls, hitbox, shots and super stay Cuphead's",
+      "symbol": "Hooks.PlaneInit",
+      "effects": "none"
+    },
+    {
+      "id": "h_results_screen",
+      "target": "WinScreen.Awake",
+      "kind": "postfix",
+      "does": "the results screen after a win shows the players' ROUNDS characters in place of Cuphead, Mugman or Ms. Chalice and switches their name labels off (ResultsLook)",
+      "symbol": "Hooks.ResultsScreen",
+      "effects": "none"
+    },
+    {
       "id": "h_motor_dash",
       "target": "LevelPlayerMotor.HandleDash",
       "kind": "prefix",
@@ -190,7 +206,7 @@
       "id": "h_death_ghost",
       "target": "PlayerDeathEffect.Init",
       "kind": "postfix",
-      "does": "a ROUNDS-driven player's death: Cuphead's ghost sprite and explosion puffs stay off (ROUNDS plays its own death burst) and a ROUNDS-style ghost (RoundsGhost, in a parry-pink ring) floats in their place around Cuphead's parry heart, so co-op revives still work (PlayerSprites.DressGhost; a ghost from before the blob is dressed when the blob attaches); plane levels keep Cuphead's",
+      "does": "a ROUNDS-driven player's death: Cuphead's ghost sprite and explosion puffs stay off (ROUNDS plays its own death burst) and a ROUNDS-style ghost (RoundsGhost, in a parry-pink ring) floats in their place around Cuphead's parry heart, so co-op revives still work (PlayerSprites.DressGhost; a ghost from before the blob is dressed when the blob attaches); a plane level's player (PlaneBlob) gets the same ROUNDS-style ghost",
       "symbol": "Hooks.DeathGhost",
       "effects": "none"
     },
@@ -789,9 +805,17 @@
     {
       "id": "e_target_remote",
       "target": "ROUNDS RemoteControl.Update",
-      "kind": "prefix",
-      "does": "Remote bullets steer toward the Cuphead cursor, or the Cuphead aim, instead of the hidden ROUNDS window's mouse",
+      "kind": "transpiler",
+      "does": "ROUNDS's own Update runs; only its steering direction is replaced: Remote bullets steer toward the Cuphead cursor, or the Cuphead aim, instead of the hidden ROUNDS window's mouse",
       "symbol": "ArenaTargetPatches.SteerWithCuphead",
+      "effects": "none"
+    },
+    {
+      "id": "e_steam_quiet",
+      "target": "ROUNDS SteamManager.Awake",
+      "kind": "prefix",
+      "does": "the hidden ROUNDS engine skips SteamAPI.Init (ROUNDS's manager stays, uninitialised, as after a failed Init), so Steam shows the player in Cuphead only instead of switching between the two games; ROUNDS started normally is untouched",
+      "symbol": "SteamQuiet.SkipSteamInit",
       "effects": "none"
     },
     {

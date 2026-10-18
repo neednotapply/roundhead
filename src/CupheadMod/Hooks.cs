@@ -32,11 +32,20 @@ namespace CupRounds
 
         /// <summary>A ROUNDS-driven player's death: Cuphead's ghost sprite and explosion puff stay off (ROUNDS plays its own death
         /// burst) and a ROUNDS-style ghost floats in their place around Cuphead's parry heart, so co-op revives still work
-        /// (PlayerDeathEffect.cs:95-107; Init picks the sprite and switches it on). Plane levels keep Cuphead's.</summary>
+        /// (PlayerDeathEffect.cs:95-107; Init picks the sprite and switches it on). A plane level's player, drawn as the flying
+        /// ROUNDS character (PlaneBlob), gets the same ghost.</summary>
         [HarmonyPostfix, HarmonyPatch(typeof(PlayerDeathEffect), "Init")]
         public static void DeathGhost(PlayerDeathEffect __instance, PlayerId playerId)
         {
-            PlayerSprites.DressGhost(__instance, BlobController.For(PlayerManager.GetPlayer(playerId)));
+            DressAnyGhost(__instance, playerId);
+        }
+
+        private static void DressAnyGhost(PlayerDeathEffect e, PlayerId id)
+        {
+            var p = PlayerManager.GetPlayer(id);
+            var c = BlobController.For(p);
+            if (c != null) PlayerSprites.DressGhost(e, c);
+            else if (p != null && p.GetComponent<PlaneBlob>() != null) PlayerSprites.DressGhost(e, null, id == PlayerId.PlayerTwo ? 1 : 0);
         }
 
         /// <summary>The same for a ghost that never ran that Init (a scene-placed TutorialPlayerDeathEffect runs its own,
@@ -44,7 +53,7 @@ namespace CupRounds
         [HarmonyPostfix, HarmonyPatch(typeof(PlayerDeathEffect), "Start")]
         public static void DeathGhostStart(PlayerDeathEffect __instance)
         {
-            if (Reflect.Get(__instance, "playerId") is PlayerId id) PlayerSprites.DressGhost(__instance, BlobController.For(PlayerManager.GetPlayer(id)));
+            if (Reflect.Get(__instance, "playerId") is PlayerId id) DressAnyGhost(__instance, id);
         }
 
         /// <summary>With the Astral Cookie (or Chalice carried over) Cuphead stands a separate Cuphead/Mugman body at the spawn
@@ -298,6 +307,21 @@ namespace CupRounds
         public static void SlotCleared(int slot)
         {
             Progress.ClearSlot(slot);
+        }
+
+        /// <summary>Plane levels: the player flies as their ROUNDS character (PlaneBlob); the plane controls stay Cuphead's.</summary>
+        [HarmonyPostfix, HarmonyPatch(typeof(PlanePlayerController), "LevelInit")]
+        public static void PlaneInit(PlanePlayerController __instance)
+        {
+            PlaneBlob.Attach(__instance);
+        }
+
+        /// <summary>The results screen after a win shows the players' ROUNDS characters instead of Cuphead and Mugman, and
+        /// without their names (ResultsLook).</summary>
+        [HarmonyPostfix, HarmonyPatch(typeof(WinScreen), "Awake")]
+        public static void ResultsScreen(WinScreen __instance)
+        {
+            ResultsLook.Attach(__instance);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(MapPlayerController), "Start")]

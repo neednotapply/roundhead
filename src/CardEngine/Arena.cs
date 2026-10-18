@@ -933,6 +933,20 @@ namespace CupRounds
                         case ArenaLink.EvKill:
                             if (!p.data.dead) p.data.healthHandler.DoDamage(Vector2.up * (p.data.health + 1000f), p.transform.position, Color.white, null, null, false, true, true);
                             break;
+                        case ArenaLink.EvParry:
+                        {
+                            // A Cuphead parry landed: ROUNDS's own block refill (sound and spark) and ROUNDS's own jump as the
+                            // bounce (it cancels a fall first). The bounce does not spend one of the player's jumps.
+                            if (p.data.dead) break;
+                            p.data.block.ResetCD(true);
+                            if (p.data.jump != null && a > 0f)
+                            {
+                                int jumps = p.data.currentJumps;
+                                p.data.jump.Jump(true, a);
+                                p.data.currentJumps = jumps;
+                            }
+                            break;
+                        }
                         case ArenaLink.EvPit:
                             // ROUNDS's own out-of-bounds bounce: a strong push back up and a hit.
                             p.data.healthHandler.CallTakeForce(Vector2.up * 200f * MassRef(p.data.playerVel), ForceMode2D.Impulse, false, true);

@@ -13,6 +13,9 @@
 - The launcher syncs BepInEx core + card engine into `%LOCALAPPDATA%\CupRounds\rounds-profile` (Thunderstore mods live there too), starts ROUNDS with
   doorstop 4 args (`--doorstop-enabled true --doorstop-target-assembly ...`), waits for `%LOCALAPPDATA%\CupRounds\engine.port`, then starts Cuphead the same way.
   Both games are started directly with `SteamAppId` set; starting Cuphead without it makes it hand itself to Steam, which then asks the user about the arguments.
+  The hidden ROUNDS never connects to Steam (src/CardEngine/SteamQuiet.cs skips SteamManager.Awake's SteamAPI.Init under
+  `--roundhead-engine`), so Steam shows the player in Cuphead only; with both connected, friends saw them flip between the
+  two games. ROUNDS already plays on after a failed Init, and the offline sandbox needs nothing from Steam.
 - Doorstop 4.3 ships as `version.dll` in each game folder (not winhttp.dll), so it never clashes with an r2modman/TMM winhttp doorstop. Without our arguments it does nothing.
 - Cuphead plugin <-> ROUNDS engine: localhost TCP, one JSON object per line (`src/Shared/Json.cs`; Unity's JsonUtility drops nested classes from plugin assemblies).
 
@@ -37,7 +40,17 @@
   (CupheadTarget) that reports hits.
 - Cuphead's player object follows ROUNDS's player (motor FixedUpdate skipped), so Cuphead enemies, hits, camera and co-op work.
   Cuphead damage -> ROUNDS health (34 per hit, 1 s cooldown, blocked while ROUNDS's block is up); ROUNDS death -> Cuphead death;
-  Cuphead revive -> ROUNDS revive. ROUNDS block also starts Cuphead's parry for 0.35 s (pink objects).
+  Cuphead revive -> ROUNDS revive. ROUNDS block also starts Cuphead's parry for 0.35 s (pink objects). A parry that lands
+  (LevelPlayerMotor.OnParrySuccess, after the hit-stop) posts EvParry: ROUNDS refills the block (Block.ResetCD, its own
+  recharge sound and spark) and bounces the player with its own jump (PlayerJump.Jump, tuning parryBounce), which does not
+  spend a jump. Cuphead's own parry bounce is lost on a ROUNDS-driven player, whose place comes from ROUNDS.
+- Plane levels keep Cuphead's plane controls, hitbox, shots and super; the player is drawn as the real ROUNDS character
+  flying (src/CupheadMod/PlaneBlob.cs): the plane's sprites stay off and the ROUNDS puppet hovers on the plane sprite with
+  Request.fly, gun forward and legs dangling behind (ROUNDS puts an airborne foot at rest + body velocity x 0.08, so the
+  puppet is posed with a backward, downward velocity: tuning flyLegTrail, flyLegDrop), sized by flySize. It follows the plane's shrink move,
+  alpha (invincibility blink) and visibility (supers), turns parry-pink while parrying, and dies as the ROUNDS ghost.
+- The results screen after a win (WinScreen) shows the ROUNDS characters on the portrait spot (src/CupheadMod/ResultsLook.cs)
+  and switches the hand-lettered name animator off.
 - Cuphead's drop shadow stays and is cast from the ROUNDS body (Hooks.PlayerShadow), so it sits at the feet and shows while
   standing; Cuphead's own cast started at its player object, placed a body lower (the two are matched by centre), inside the floor.
 - Cuphead's own drawings of a driven player stay off (src/CupheadMod/PlayerSprites.cs): the player object's sprites are
@@ -110,9 +123,9 @@ since they could neither dodge nor block. ROUNDHEAD_DEV_DUMP logs how ROUNDS dra
   that point of the title load. The plugin logs a heartbeat every 15 s in test runs (scene, engine link, arena, window) so
   a recording with no checks still says where it stood.
 
-## Known limits (v0.1.0)
-- Plane levels stay Cuphead's plane (no picks, no wipe).
-- The results screen after a win and the title screen are Cuphead's own art (Cuphead and Mugman); only the playable character is ROUNDS's.
+## Known limits (v0.1.1)
+- Plane levels have no ROUNDS cards: the plane's shots and super are Cuphead's (no picks, no wipe), only the look is ROUNDS's.
+- The title screen is Cuphead's own art (Cuphead and Mugman).
 - Co-op is Cuphead's local 2-player; there is no online play.
 
 ## Melty listing wording (2026-10-17)

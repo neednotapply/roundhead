@@ -187,14 +187,18 @@ namespace CupRounds
                 if (holding != null && holding.holdable != null) foreach (var c in holding.holdable.GetComponentsInChildren<Transform>(true)) c.gameObject.layer = Layer;
             }
             Request p = pose;
-            x += p.vx * dt;
-            float target = Mathf.Max(0f, p.height);
+            // Flying stays in place (the plane moves on Cuphead's side) high above the puppet's floor, and the body velocity
+            // ROUNDS's legs read is pointed back and down: in the air ROUNDS puts each foot at its rest spot plus that
+            // velocity x 0.08 (IkLeg.AirFootMovement), so the legs dangle behind as the character flies.
+            if (!p.fly) x += p.vx * dt;
+            float target = p.fly ? Mathf.Max(Tuning.flyHover, p.height) : Mathf.Max(0f, p.height);
             shownHeight = Mathf.Lerp(shownHeight, target, Mathf.Clamp01(dt * 30f));
             root.transform.position = new Vector3(basePos.x + x, basePos.y + shownHeight, 0f);
-            if (vel != null && VelField != null) VelField.SetValue(vel, new Vector2(p.vx, p.vy));
+            Vector2 legVel = p.fly ? new Vector2(p.vx * 0.3f - Tuning.flyLegTrail, p.vy * 0.3f - Tuning.flyLegDrop) : new Vector2(p.vx, p.vy);
+            if (vel != null && VelField != null) VelField.SetValue(vel, legVel);
             if (data != null)
             {
-                data.isGrounded = p.grounded;
+                data.isGrounded = p.grounded && !p.fly;
                 data.sinceGrounded = p.grounded ? 0f : data.sinceGrounded + dt;
                 data.isWallGrab = false;
                 var aim = new Vector3(p.ax, p.ay, 0f);
@@ -207,9 +211,10 @@ namespace CupRounds
                 if (aim.sqrMagnitude > 0.01f) holdingObject.rotation = Quaternion.LookRotation(aim.normalized, Vector3.back);
             }
             MoveGun(dt, p);
-            if (p.grounded && !wasGrounded) Play("LandSmoke");
-            if (!p.grounded && wasGrounded && p.vy > 0.5f) { Play("JumpSmoke"); Play("Jump"); }
-            wasGrounded = p.grounded;
+            bool grounded = p.grounded && !p.fly;
+            if (grounded && !wasGrounded) Play("LandSmoke");
+            if (!grounded && wasGrounded && p.vy > 0.5f && !p.fly) { Play("JumpSmoke"); Play("Jump"); }
+            wasGrounded = grounded;
             if (p.shoot) gunVel -= data.aimDirection * 9f;
             if (p.block) Play("Block");
             if (p.hit) root.GetComponentInChildren<PlayerSkinHandler>(true)?.BlinkColor(Color.white * 0.95f);

@@ -61,9 +61,15 @@ namespace CupRounds
         /// ran Init (a scene-placed TutorialPlayerDeathEffect), where the anchor may still be unset.</summary>
         public static void DressGhost(PlayerDeathEffect e, BlobController c)
         {
-            if (e == null || c == null || e.GetComponent<RoundsGhost>() != null) return;
+            if (c != null) DressGhost(e, c, c.index);
+        }
+
+        /// <summary>The same for a player drawn as the ROUNDS character without a blob (a plane level's <see cref="PlaneBlob"/>).</summary>
+        public static void DressGhost(PlayerDeathEffect e, BlobController c, int index)
+        {
+            if (e == null || e.GetComponent<RoundsGhost>() != null) return;
             foreach (string f in new[] { "cuphead", "mugman", "chalice", "effect", "chaliceEffect" }) Hide(Reflect.Get<SpriteRenderer>(e, f));
-            RoundsGhost.Attach(e, Reflect.Get<SpriteRenderer>(e, "spriteRenderer"), c);
+            RoundsGhost.Attach(e, Reflect.Get<SpriteRenderer>(e, "spriteRenderer"), c, index);
         }
 
         /// <summary>The ghosts already in the level for this player (one that started the level dead).</summary>
@@ -146,18 +152,17 @@ namespace CupRounds
         private readonly List<Color> baseColors = new List<Color>();
         private float d, t;
 
-        public static RoundsGhost Attach(Component effect, SpriteRenderer anchor, BlobController c)
+        public static RoundsGhost Attach(Component effect, SpriteRenderer anchor, BlobController c, int index)
         {
             var g = effect.gameObject.AddComponent<RoundsGhost>();
-            g.Init(anchor, c);
+            g.Init(anchor, c, index);
             return g;
         }
 
-        private void Init(SpriteRenderer a, BlobController c)
+        private void Init(SpriteRenderer a, BlobController c, int index)
         {
             anchorR = a;
             anchor = a != null ? a.transform : transform;
-            int index = c != null ? c.index : 0;
             d = c != null ? c.body.Diameter : Tuning.blobDiameter;
             holder = new GameObject("RoundsGhost").transform;
             holder.SetParent(transform, false);

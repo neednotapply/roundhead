@@ -43,7 +43,7 @@ namespace CupRounds
         public const int ShapeBox = 0, ShapeCircle = 1, ShapePoly = 2, ShapeOff = 3;
         // events
         public const int E_Serial = 0, E_Type = 4, E_Slot = 8, E_A = 12, E_B = 16, E_C = 20, E_D = 24, E_Life = 28;
-        public const int EvDamage = 1, EvRevive = 2, EvTeleport = 3, EvKill = 4, EvPit = 5, EvPark = 6, EvSpawn = 7, EvBlockedHit = 8;
+        public const int EvDamage = 1, EvRevive = 2, EvTeleport = 3, EvKill = 4, EvPit = 5, EvPark = 6, EvSpawn = 7, EvBlockedHit = 8, EvParry = 9;
         /// <summary>Extra per-player input block (cursor in Cuphead world units, keys that only some cards use).</summary>
         public const int C_Slot2 = 2560, Slot2Size = 32, U_CursorX = 0, U_CursorY = 4, U_CursorOn = 8, U_DownHeld = 12, U_SwitchPresses = 16;
 

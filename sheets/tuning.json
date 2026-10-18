@@ -399,6 +399,48 @@
       "why": "A Cuphead hit taken during the ROUNDS block reaches ROUNDS as EvBlockedHit at most this often (contact damage repeats every frame)"
     },
     {
+      "id": "parryBounce",
+      "value": 1,
+      "unit": "x ROUNDS jump",
+      "why": "A parry that lands bounces the ROUNDS player with ROUNDS's own jump at this strength (Cuphead's parry bounce), and refills its block"
+    },
+    {
+      "id": "flyHover",
+      "value": 3,
+      "unit": "rounds units",
+      "why": "In plane levels the ROUNDS character is drawn flying: it hovers this high above the puppet's floor so its legs never touch it"
+    },
+    {
+      "id": "flyLegTrail",
+      "value": 9,
+      "unit": "rounds units/s",
+      "why": "Backward body speed the flying character's legs are posed with (ROUNDS puts an airborne foot at rest + velocity x 0.08), so they dangle behind it"
+    },
+    {
+      "id": "flyLegDrop",
+      "value": 4,
+      "unit": "rounds units/s",
+      "why": "Downward body speed the flying character's legs are posed with, so they hang a little below it"
+    },
+    {
+      "id": "flySize",
+      "value": 62,
+      "unit": "cuphead units",
+      "why": "Body width of the flying ROUNDS character in plane levels, a little smaller than the plane it replaces (the plane sprite's frames are mostly padding, so its bounds cannot size it)"
+    },
+    {
+      "id": "flyShrunk",
+      "value": 0.5,
+      "unit": "x flySize",
+      "why": "The flying ROUNDS character shrinks to this while the plane is shrunk (Cuphead's shrink move)"
+    },
+    {
+      "id": "resultsSize",
+      "value": 0.3,
+      "unit": "x portrait height",
+      "why": "Size of the ROUNDS body on the results screen against the Cuphead or Mugman portrait it replaces"
+    },
+    {
       "id": "murderSettle",
       "value": 4,
       "unit": "s",

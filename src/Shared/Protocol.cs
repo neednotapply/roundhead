@@ -17,6 +17,8 @@ namespace CupRounds
         // pose (ROUNDS units, +y up)
         public float vx, vy, height, ax, ay;
         public bool grounded, shoot, block, hit, dead;
+        /// <summary>Flying (Cuphead's plane levels): the character hovers in place and its legs trail behind and below it.</summary>
+        public bool fly;
     }
 
     /// <summary>One response line from the engine. Only the fields of the answered op are filled.</summary>

@@ -54,7 +54,7 @@ def main():
         if os.path.exists(os.path.join(DL, extra)):
             copy(os.path.join(DL, extra), os.path.join(m, "third-party-notices", extra))
         else:
-            print("warning: %s is missing from %s (see README, Building from source)" % (extra, DL))
+            sys.exit("%s is missing from %s (see README, Building from source)" % (extra, DL))
     with open(os.path.join(m, "third-party-notices", "NOTICE.txt"), "w", encoding="utf-8") as fh:
         fh.write("BepInEx 5.4.23.2 - MIT - https://github.com/BepInEx/BepInEx\n"
                  "HarmonyX (0Harmony.dll, 0Harmony20.dll, HarmonyXInterop.dll) - MIT - https://github.com/BepInEx/HarmonyX\n"

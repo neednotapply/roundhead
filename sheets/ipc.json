@@ -60,7 +60,7 @@
     },
     {
       "id": "pose",
-      "request": "slot, vx, vy, height, ax, ay, grounded, shoot, block, hit, dead",
+      "request": "slot, vx, vy, height, ax, ay, grounded, shoot, block, hit, dead, fly (plane levels: hover in place, legs trailing)",
       "response": "none (the engine moves that player's ROUNDS puppet)",
       "server": "EngineServer.OnPose",
       "client": "EngineClient.Pose"

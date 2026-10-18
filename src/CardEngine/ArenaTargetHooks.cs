@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using Photon.Pun;
 using Sonigon;
@@ -191,13 +192,6 @@ namespace CupRounds
         private static readonly AccessTools.FieldRef<Thruster, Vector2> ThFwd = AccessTools.FieldRefAccess<Thruster, Vector2>("startForward");
 
         private static readonly AccessTools.FieldRef<RemoteControl, SpawnedAttack> RcSpawned = AccessTools.FieldRefAccess<RemoteControl, SpawnedAttack>("spawned");
-        private static readonly AccessTools.FieldRef<RemoteControl, MoveTransform> RcMove = AccessTools.FieldRefAccess<RemoteControl, MoveTransform>("move");
-        private static readonly AccessTools.FieldRef<RemoteControl, float> RcStart = AccessTools.FieldRefAccess<RemoteControl, float>("startVelocity");
-        private static readonly AccessTools.FieldRef<RemoteControl, bool> RcOn = AccessTools.FieldRefAccess<RemoteControl, bool>("isOn");
-        private static readonly AccessTools.FieldRef<RemoteControl, ProjectileHit> RcHit = AccessTools.FieldRefAccess<RemoteControl, ProjectileHit>("hit");
-        private static readonly AccessTools.FieldRef<RemoteControl, ParticleSystem> RcPart = AccessTools.FieldRefAccess<RemoteControl, ParticleSystem>("part");
-        private static readonly AccessTools.FieldRef<RemoteControl, float> RcC = AccessTools.FieldRefAccess<RemoteControl, float>("c");
-        private static readonly AccessTools.FieldRef<RemoteControl, PhotonView> RcView = AccessTools.FieldRefAccess<RemoteControl, PhotonView>("view");
 
         private static readonly AccessTools.FieldRef<Teleport, CharacterData> TpData = AccessTools.FieldRefAccess<Teleport, CharacterData>("data");
         private static readonly AccessTools.FieldRef<Teleport, AttackLevel> TpLevel = AccessTools.FieldRefAccess<Teleport, AttackLevel>("level");
@@ -779,70 +773,66 @@ namespace CupRounds
         // ------------------------------------------------------------------ Remote and Teleport
 
         /// <summary>Remote steers toward the Cuphead cursor (the keyboard player's mouse, sent in the Slot2 block) or else the aim
-        /// Cuphead sends. ROUNDS reads the hidden window's mouse through MainCam for players without a device (RemoteControl.cs:83-92),
-        /// which sends every bullet straight up. The rest is RemoteControl.Update unchanged.</summary>
-        [HarmonyPrefix, HarmonyPatch(typeof(RemoteControl), "Update")]
-        public static bool SteerWithCuphead(RemoteControl __instance)
+        /// Cuphead sends. RemoteControl.Update picks its steering direction from the device aim or, for a player without a device,
+        /// the hidden window's mouse through MainCam, which sends every bullet straight up. ROUNDS's own Update still runs: this
+        /// only hands it <see cref="RemoteAim"/> at the point where both of its aim branches meet, just before the spread is
+        /// added (the first "aim + Cross(forward, aim) * spread").</summary>
+        [HarmonyTranspiler, HarmonyPatch(typeof(RemoteControl), "Update")]
+        public static IEnumerable<CodeInstruction> SteerWithCuphead(IEnumerable<CodeInstruction> instructions)
+        {
+            var list = new List<CodeInstruction>(instructions);
+            var forward = AccessTools.PropertyGetter(typeof(Vector3), nameof(Vector3.forward));
+            var cross = AccessTools.Method(typeof(Vector3), nameof(Vector3.Cross));
+            var aim = AccessTools.Method(typeof(ArenaTargetPatches), nameof(RemoteAim));
+            for (int i = 0; i + 3 < list.Count; i++)
+            {
+                // ldloc aim; call Vector3.forward; ldloc aim; call Vector3.Cross
+                if (!list[i].IsLdloc() || !list[i + 1].Calls(forward) || !list[i + 2].IsLdloc() || !list[i + 3].Calls(cross)) continue;
+                var store = StoreFor(list[i]);
+                if (store == null) break;
+                // aim = RemoteAim(this, aim); the merge point's labels move to the first inserted instruction
+                var first = new CodeInstruction(OpCodes.Ldarg_0);
+                first.labels.AddRange(list[i].labels);
+                list[i].labels.Clear();
+                list.InsertRange(i, new[] { first, new CodeInstruction(list[i].opcode, list[i].operand), new CodeInstruction(OpCodes.Call, aim), store });
+                return list;
+            }
+            EnginePlugin.L.LogWarning("arena hook: RemoteControl.Update's aim was not found; Remote bullets keep ROUNDS's own aim");
+            return list;
+        }
+
+        /// <summary>The stloc that matches an ldloc of the same local.</summary>
+        private static CodeInstruction StoreFor(CodeInstruction load)
+        {
+            var op = load.opcode;
+            if (op == OpCodes.Ldloc_0) return new CodeInstruction(OpCodes.Stloc_0);
+            if (op == OpCodes.Ldloc_1) return new CodeInstruction(OpCodes.Stloc_1);
+            if (op == OpCodes.Ldloc_2) return new CodeInstruction(OpCodes.Stloc_2);
+            if (op == OpCodes.Ldloc_3) return new CodeInstruction(OpCodes.Stloc_3);
+            if (op == OpCodes.Ldloc_S) return new CodeInstruction(OpCodes.Stloc_S, load.operand);
+            if (op == OpCodes.Ldloc) return new CodeInstruction(OpCodes.Stloc, load.operand);
+            return null;
+        }
+
+        /// <summary>The direction a Remote bullet steers to: for an arena player's bullet, toward the Cuphead cursor while that
+        /// player's cursor is on, else the aim Cuphead sends; anything else keeps the direction ROUNDS picked.</summary>
+        public static Vector3 RemoteAim(RemoteControl rc, Vector3 rounds)
         {
             var a = Arena.I;
-            if (a == null || !a.WorldReady) return true;
-            var sp = RcSpawned(__instance);
-            if (sp == null || sp.spawner == null) return true;
-            int s = a.SlotOf(sp.spawner);
-            if (s < 0) return true;
+            if (a == null || !a.WorldReady || rc == null) return rounds;
             try
             {
-                var view = RcView(__instance);
-                if (view != null && !view.IsMine) return false;
-                var move = RcMove(__instance);
-                var hit = RcHit(__instance);
-                if (move == null || hit == null) return false;
-                Vector3 zero;
+                var sp = RcSpawned(rc);
+                if (sp == null || sp.spawner == null) return rounds;
+                int s = a.SlotOf(sp.spawner);
+                if (s < 0) return rounds;
                 int x = ArenaLink.Slot2(s);
-                if (a.link.I(x + ArenaLink.U_CursorOn) != 0)
-                {
-                    zero = (Vector3)a.ToRounds(a.link.F(x + ArenaLink.U_CursorX), a.link.F(x + ArenaLink.U_CursorY)) - __instance.transform.position;
-                    zero.z = 0f;
-                    zero.Normalize();
-                }
-                else zero = sp.spawner.data.input.aimDirection;
-                zero += Vector3.Cross(Vector3.forward, zero) * move.selectedSpread;
-                float dt = TimeHandler.deltaTime;
-                RcC(__instance) += dt;
-                if (__instance.snap)
-                {
-                    if (sp.spawner.data.block.blockedThisFrame)
-                    {
-                        var part = RcPart(__instance);
-                        if (part != null) part.Play();
-                        move.velocity *= -1f;
-                        __instance.enabled = false;
-                    }
-                }
-                else if (zero.magnitude > 0.2f && hit.sinceReflect > 2f)
-                {
-                    move.velocity = Vector3.RotateTowards(move.velocity, zero.normalized * RcStart(__instance), __instance.rotateSpeed * dt, __instance.rotateSpeed * dt * 10f);
-                    if (RcC(__instance) > 0.1f)
-                    {
-                        var boop = __instance.boopPart;
-                        if (boop != null)
-                        {
-                            if (boop.transform.parent != null) boop.transform.parent.rotation = Quaternion.LookRotation(zero);
-                            boop.Emit(1);
-                        }
-                        RcC(__instance) = 0f;
-                    }
-                    if (!RcOn(__instance)) move.simulateGravity++;
-                    RcOn(__instance) = true;
-                }
-                else
-                {
-                    if (RcOn(__instance)) move.simulateGravity--;
-                    RcOn(__instance) = false;
-                }
+                if (a.link.I(x + ArenaLink.U_CursorOn) == 0) return sp.spawner.data.input.aimDirection;
+                Vector3 dir = (Vector3)a.ToRounds(a.link.F(x + ArenaLink.U_CursorX), a.link.F(x + ArenaLink.U_CursorY)) - rc.transform.position;
+                dir.z = 0f;
+                return dir.normalized;
             }
-            catch (Exception e) { Fail("remote", e); }
-            return false;
+            catch (Exception e) { Fail("remote", e); return rounds; }
         }
 
         /// <summary>Where the teleport starts (DelayMove steps from the Teleport's own position, Teleport.cs:45).</summary>

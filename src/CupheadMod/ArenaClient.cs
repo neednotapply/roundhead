@@ -399,6 +399,16 @@ namespace CupRounds
             link.PostEvent(ArenaLink.EvSpawn, c.index, c.player.center.x, c.player.center.y, life: life[c.index]);
         }
 
+        /// <summary>A parry landed (LevelPlayerMotor.OnParrySuccess, after the hit-stop): ROUNDS refills the block and bounces
+        /// its player, the reward Cuphead gives for a parry. Cuphead's own bounce is lost on a ROUNDS-driven player, whose
+        /// place comes from ROUNDS.</summary>
+        public static void OnParrySuccess(BlobController c)
+        {
+            if (link == null || !Drives(c) || !Synced(c) || c.player.IsDead) return;
+            link.PostEvent(ArenaLink.EvParry, c.index, Tuning.parryBounce);
+            TestMode.Report("parry-reward", true, "player " + (c.index + 1) + " parried: ROUNDS block refilled and bounce sent");
+        }
+
         private static void StartParry(BlobController c)
         {
             var m = c.player.motor;
