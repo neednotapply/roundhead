@@ -11,7 +11,7 @@ namespace CupRounds
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "gg.melty.roundhead.cuphead";
-        public const string PluginVersion = "0.1.2";
+        public const string PluginVersion = "0.1.4";
 
         public static Plugin I;
         public static ManualLogSource L;

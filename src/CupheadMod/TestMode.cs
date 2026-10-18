@@ -50,6 +50,8 @@ namespace CupRounds
                 Seed = t.seed != 0 ? t.seed : 1234;
                 checksPath = t.checks;
                 startedAt = Time.realtimeSinceStartup;
+                // Cuphead pauses whenever its window is not in front; a test run plays itself while the creator uses the PC.
+                Application.runInBackground = true;
                 UnityEngine.Random.InitState(Seed);
                 Plugin.L.LogInfo("Melty test run " + t.run + "/" + t.runs + " (seed " + Seed + "): going straight to a boss fight");
             }
@@ -788,6 +790,7 @@ namespace CupRounds
         public static void Tick()
         {
             if (!Active) return;
+            if (!Application.runInBackground) Application.runInBackground = true;
             float now = Time.realtimeSinceStartup;
             switch (step)
             {

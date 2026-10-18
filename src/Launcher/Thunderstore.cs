@@ -46,14 +46,52 @@ namespace CupRounds.Launcher
         public static List<TsPackage> Packages = new List<TsPackage>();
         public static Dictionary<string, TsPackage> ByName = new Dictionary<string, TsPackage>(StringComparer.OrdinalIgnoreCase);
 
-        public static WebClient Web()
+        /// <summary>A WebClient that gives up on a stalled server instead of waiting forever, and takes gzip (the mod list is 7 MB raw).</summary>
+        private class TimedWebClient : WebClient
         {
-            var w = new WebClient { Encoding = Encoding.UTF8 };
+            public int TimeoutMs = 30000;
+
+            protected override WebRequest GetWebRequest(Uri address)
+            {
+                var r = base.GetWebRequest(address);
+                if (r is HttpWebRequest h)
+                {
+                    h.Timeout = TimeoutMs;
+                    h.ReadWriteTimeout = TimeoutMs;
+                    h.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                }
+                return r;
+            }
+        }
+
+        public static WebClient Web(int timeoutMs = 30000)
+        {
+            var w = new TimedWebClient { Encoding = Encoding.UTF8, TimeoutMs = timeoutMs };
             w.Headers[HttpRequestHeader.UserAgent] = "Roundhead-Launcher/0.1 (+https://melty.gg/m/roundhead)";
             return w;
         }
 
-        /// <summary>Loads every ROUNDS package (cached for an hour).</summary>
+        /// <summary>Downloads text, giving up after timeoutMs whatever stage it is stuck in: HttpWebRequest's own timeouts
+        /// do not cover every stall (a proxy tunnel that never answers kept the old launcher waiting for good).</summary>
+        public static string GetString(string url, int timeoutMs)
+        {
+            using (var w = Web(timeoutMs))
+            {
+                var t = w.DownloadStringTaskAsync(url);
+                try
+                {
+                    if (t.Wait(timeoutMs)) return t.Result;
+                }
+                catch (AggregateException e) { throw e.InnerException ?? e; }
+                w.CancelAsync();
+                throw new TimeoutException("no answer in " + timeoutMs / 1000 + " s");
+            }
+        }
+
+        /// <summary>True once a mod list (fresh or saved) is in Packages.</summary>
+        public static bool Loaded;
+
+        /// <summary>Loads every ROUNDS package (cached for an hour). Only browsing and installing mods need it; Play never waits for it.</summary>
         public static void LoadPackages(bool forceRefresh = false)
         {
             Directory.CreateDirectory(Paths.Cache);
@@ -61,21 +99,32 @@ namespace CupRounds.Launcher
             string json = null;
             if (!forceRefresh && File.Exists(cache) && DateTime.Now - File.GetLastWriteTime(cache) < TimeSpan.FromHours(1))
                 json = File.ReadAllText(cache, Encoding.UTF8);
+            if (json == null && !forceRefresh && File.Exists(cache) && !Loaded)
+            {
+                // Show the saved list straight away while a fresh one downloads.
+                try { Parse(File.ReadAllText(cache, Encoding.UTF8)); } catch (Exception e) { Log.Write("The saved mod list is unreadable (" + e.Message + ")"); }
+            }
             if (json == null)
             {
                 Log.Write("Downloading the ROUNDS mod list from Thunderstore...");
                 try
                 {
-                    using (var w = Web()) json = w.DownloadString(PackageApi);
+                    json = GetString(PackageApi, 60000);
                     File.WriteAllText(cache, json, Encoding.UTF8);
                 }
                 catch (Exception e)
                 {
                     Log.Write("Thunderstore is unreachable (" + e.Message + ")" + (File.Exists(cache) ? "; using the saved list" : ""));
+                    if (Loaded) return;
                     if (File.Exists(cache)) json = File.ReadAllText(cache, Encoding.UTF8);
                     else return;
                 }
             }
+            Parse(json);
+        }
+
+        private static void Parse(string json)
+        {
             var ser = new JavaScriptSerializer { MaxJsonLength = int.MaxValue, RecursionLimit = 64 };
             var raw = ser.DeserializeObject(json) as object[];
             var list = new List<TsPackage>();
@@ -113,9 +162,11 @@ namespace CupRounds.Launcher
                         }
                     if (p.Versions.Count > 0 && !p.Nsfw) list.Add(p);
                 }
+            var byName = new Dictionary<string, TsPackage>(StringComparer.OrdinalIgnoreCase);
+            foreach (var p in list) byName[p.FullName] = p;
             Packages = list;
-            ByName = new Dictionary<string, TsPackage>(StringComparer.OrdinalIgnoreCase);
-            foreach (var p in list) ByName[p.FullName] = p;
+            ByName = byName;
+            Loaded = true;
             Log.Write("Thunderstore: " + list.Count + " ROUNDS mods, " + list.Count(p => p.IsCards) + " of them card mods");
         }
 

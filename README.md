@@ -71,8 +71,8 @@ You need Windows, the .NET SDK (8 works; the projects target net35, net472 and n
 
    This decompiled code is for checking on your machine only. Never commit it.
 5. The design sheets in `sheets/` are the source of truth, and `src/Shared/Generated` is made from them. Run `python -I tools/sheets.py gen` after editing a sheet, and `python -I tools/sheets.py preflight --code` before every build. It must print `clean`.
-6. `python -I tools/package.py 0.1.2` runs the preflight, builds all three projects and writes `dist/Roundhead-0.1.2.zip`, the package Melty installs.
-7. To release it, attach that zip to a GitHub release tagged with the version (`v0.1.2`). `melty.json` at the repository root is the Melty install recipe; it names the package `Roundhead-*.zip`, so Melty takes the tested zip from each release instead of building from source, which needs your own games.
+6. `python -I tools/package.py 0.1.4` runs the preflight, builds all three projects and writes `dist/Roundhead-0.1.4.zip`, the package Melty installs.
+7. To release it, attach that zip to a GitHub release tagged with the version (`v0.1.4`). `melty.json` at the repository root is the Melty install recipe; it names the package `Roundhead-*.zip`, so Melty takes the tested zip from each release instead of building from source, which needs your own games.
 8. To play the staged build without Melty, copy `dist/stage/proxy-cuphead/version.dll` into your Cuphead folder and `dist/stage/proxy-rounds/version.dll` into your ROUNDS folder, then start `dist/stage/managed/CupRoundsLauncher.exe`. Remove the two `version.dll` files afterwards. `devtools/devloader.sh` does the copying for the dev install.
 
 `NOTES.md` holds the design and testing notes. [devtools](devtools/README.md) has the scripts that run the mod on the real games with test bots and that filmed the listing media.

@@ -154,7 +154,7 @@ namespace CupRounds.Launcher
             Btn(removeBtn, "Remove", Color.FromArgb(120, 50, 40)).Width = 100;
             removeBtn.Click += (s, e) => RemoveSelected();
             Btn(updateBtn, "Update all", Color.FromArgb(70, 70, 70)).Width = 110;
-            updateBtn.Click += (s, e) => Work("Updating...", () => ProfileManager.UpdateAll());
+            updateBtn.Click += (s, e) => { if (ListReady()) Work("Updating...", () => ProfileManager.UpdateAll()); };
             Btn(importCodeBtn, "Import profile code", Color.FromArgb(70, 70, 70)).Width = 160;
             importCodeBtn.Click += (s, e) => ImportCode();
             Btn(importLocalBtn, "Copy an r2modman profile", Color.FromArgb(70, 70, 70)).Width = 190;
@@ -196,12 +196,29 @@ namespace CupRounds.Launcher
         {
             ProfileManager.Load();
             RefreshInstalled();
-            Work("Loading Thunderstore...", () => Thunderstore.LoadPackages(), () =>
+            // Play needs only the mods already in the profile, never the Thunderstore list, so it starts (or is
+            // pressable) at once. A slow or blocked Thunderstore once kept PLAY greyed out until players gave up.
+            if (Program.AutoPlay) { StartPlay(); return; }
+            status.Text = "Ready. " + ProfileManager.Mods.Count + " mod(s) in your Roundhead profile. Loading the Thunderstore mod list...";
+            new Thread(() =>
             {
-                ApplyFilter();
-                status.Text = "Ready. " + ProfileManager.Mods.Count + " mod(s) in your Roundhead profile.";
-                if (Program.AutoPlay) StartPlay();
-            });
+                try { Thunderstore.LoadPackages(); }
+                catch (Exception e) { Log("Could not read the Thunderstore mod list: " + e.Message); }
+                Ui(() =>
+                {
+                    ApplyFilter();
+                    if (!busy) status.Text = "Ready. " + ProfileManager.Mods.Count + " mod(s) in your Roundhead profile."
+                        + (Thunderstore.Loaded ? "" : " Thunderstore is unreachable right now; you can still play.");
+                });
+            }) { IsBackground = true }.Start();
+        }
+
+        /// <summary>Installing, updating and importing look mods up in the Thunderstore list; say so instead of failing quietly.</summary>
+        private bool ListReady()
+        {
+            if (Thunderstore.Loaded) return true;
+            status.Text = "The Thunderstore mod list is still loading (or unreachable). You can press PLAY meanwhile.";
+            return false;
         }
 
         public void ApplyFilter()
@@ -262,6 +279,7 @@ namespace CupRounds.Launcher
 
         private void ImportCode()
         {
+            if (!ListReady()) return;
             string code = Prompt("Paste an r2modman / Thunderstore Mod Manager profile code:", "Import profile code");
             if (string.IsNullOrWhiteSpace(code)) return;
             Work("Importing profile...", () => ProfileManager.ImportCode(code));
@@ -269,6 +287,7 @@ namespace CupRounds.Launcher
 
         private void ImportLocal()
         {
+            if (!ListReady()) return;
             var profiles = ProfileManager.LocalProfiles();
             if (profiles.Count == 0) { MessageBox.Show(this, "No r2modman or Thunderstore Mod Manager ROUNDS profiles were found on this PC.", "Roundhead"); return; }
             using (var f = new Form { Text = "Copy which profile?", Size = new Size(460, 320), StartPosition = FormStartPosition.CenterParent, BackColor = Bg, ForeColor = Ink })
@@ -355,13 +374,14 @@ namespace CupRounds.Launcher
             new Thread(() =>
             {
                 string err = null;
+                bool wrongRounds = false;
                 try
                 {
                     // While playing, the launcher steps out of the way entirely (no window, no taskbar button).
                     Ui(() => Hide());
                     GameRunner.Play();
                 }
-                catch (Exception e) { err = e.Message; Log("Could not play: " + e.Message); GameRunner.StopRounds(); }
+                catch (Exception e) { err = e.Message; wrongRounds = e is WrongRoundsVersion; Log("Could not play: " + e.Message); GameRunner.StopRounds(); }
                 Ui(() =>
                 {
                     busy = false;
@@ -369,9 +389,16 @@ namespace CupRounds.Launcher
                     playBtn.Text = "PLAY";
                     if (err != null)
                     {
+                        // Test runs (autoplay) start invisible; a problem must still be seen.
+                        Opacity = 1;
+                        ShowInTaskbar = true;
                         Show();
                         WindowState = FormWindowState.Normal;
-                        status.Text = "Problem: " + err;
+                        Activate();
+                        status.Text = "Problem: " + err.Replace("\n\n", " ");
+                        if (wrongRounds && MessageBox.Show(this, err + "\n\nOpen ROUNDS in your Steam library now?", "Roundhead: switch ROUNDS's version",
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                            try { System.Diagnostics.Process.Start("steam://nav/games/details/" + GameRunner.RoundsAppId); } catch { }
                     }
                     else Close();
                 });
