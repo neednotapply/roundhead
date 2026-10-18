@@ -1,0 +1,17 @@
+# build output and the release package
+bin/
+obj/
+dist/
+*.user
+.vs/
+
+# python
+__pycache__/
+*.pyc
+
+# the full-quality trailer lives on the Melty listing; the repo keeps the smaller preview
+media/listing/roundhead-trailer.mp4
+
+# never commit game files, decompiled game code or BepInEx downloads (they stay in ~/cuprounds-work and ~/cuprounds-decomp)
+*.dll
+*.exe

@@ -1,0 +1,23 @@
+{
+  "sheet": "launcher",
+  "about": "CupRounds Launcher: what Melty starts. It manages the mashup's own ROUNDS mod profile from Thunderstore, then starts ROUNDS (hidden card engine) and Cuphead together.",
+  "columns": {
+    "id": "feature",
+    "does": "what the player sees",
+    "symbol": "Class.Method in src/Launcher",
+    "source": "where its data comes from"
+  },
+  "rows": [
+    {"id": "browse", "does": "list ROUNDS mods from Thunderstore with icon name, author, downloads, rating, description", "symbol": "Thunderstore.LoadPackages", "source": "https://thunderstore.io/c/rounds/api/v1/package/"},
+    {"id": "search", "does": "search box and a Cards-only filter (on by default)", "symbol": "MainForm.ApplyFilter", "source": "package categories"},
+    {"id": "install", "does": "install a mod and all its dependencies into the mashup's ROUNDS profile", "symbol": "ProfileManager.Install", "source": "package version download_url"},
+    {"id": "uninstall", "does": "remove a mod", "symbol": "ProfileManager.Uninstall", "source": "profile folder"},
+    {"id": "toggle", "does": "enable or disable an installed mod without deleting it", "symbol": "ProfileManager.SetEnabled", "source": "profile folder"},
+    {"id": "update", "does": "update installed mods to their latest version", "symbol": "ProfileManager.UpdateAll", "source": "package latest version"},
+    {"id": "import_code", "does": "import an r2modman / Thunderstore Mod Manager profile code", "symbol": "ProfileManager.ImportCode", "source": "https://thunderstore.io/api/experimental/legacyprofile/get/{code}/"},
+    {"id": "import_local", "does": "copy the mod list of a local r2modman / Thunderstore Mod Manager ROUNDS profile (reinstalled fresh from Thunderstore)", "symbol": "ProfileManager.ImportLocal", "source": "%APPDATA%/r2modmanPlus-local/ROUNDS/profiles and %APPDATA%/Thunderstore Mod Manager/DataFolder/ROUNDS/profiles mods.yml"},
+    {"id": "play", "does": "start ROUNDS hidden with the profile, wait for its cards, then start Cuphead with the plugin; close the ROUNDS it started when Cuphead closes", "symbol": "GameRunner.Play", "source": "--cuphead and --rounds folders from Melty"},
+    {"id": "autoplay", "does": "skip the launcher window and play at once (Melty test runs, or --autoplay)", "symbol": "Program.Main", "source": "--autoplay or MELTY_TEST environment"},
+    {"id": "status", "does": "status line and log of what the launcher is doing", "symbol": "MainForm.Log", "source": "launcher"}
+  ]
+}

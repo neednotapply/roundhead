@@ -1,0 +1,17 @@
+{
+  "sheet": "progression",
+  "about": "ROUNDS's loop on Cuphead's campaign: a level is a match. Every game over gives each player a pick on the game-over card (the loser picks), the deck is kept through retries and trips to the map, and winning the level wipes it. Nothing is permanent; Porkrind's pack is a head start on the next attempt. Every pick shows offerSize real ROUNDS cards chosen with ROUNDS's own rarity weights and duplicate/blacklist rules. Decks are saved per Cuphead save slot and per player in %LOCALAPPDATA%/CupRounds/saves; tuning deckCap (0 = none) bounds a deck.",
+  "columns": {
+    "id": "rule",
+    "when": "trigger",
+    "picks": "picks each player gets",
+    "offerSize": "cards shown per pick",
+    "cost": "coins (0 = free)",
+    "symbol": "method in src/CupheadMod that applies it"
+  },
+  "rows": [
+    {"id": "loss", "when": "a game over on a level ROUNDS's players are in (every player dead, or a Mausoleum urn lost): each player picks on the game-over card, before Retry or Exit to Map", "picks": 1, "offerSize": 5, "cost": 0, "symbol": "Progress.OnLevelLost"},
+    {"id": "level_won", "when": "a level ROUNDS's players are in is won (boss, run-and-gun, mausoleum, King Dice himself): both decks are wiped; a Dice Palace mini boss keeps them, plane levels and the tutorial take no part", "picks": 0, "offerSize": 0, "cost": 0, "symbol": "Progress.OnLevelWon"},
+    {"id": "shop_pack", "when": "buying a card pack at Porkrind's Emporium: one card into the current deck, a head start on the next attempt (wiped at the win like the rest)", "picks": 1, "offerSize": 5, "cost": 2, "symbol": "ShopPackOverlay.Buy"}
+  ]
+}

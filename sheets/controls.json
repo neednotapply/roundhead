@@ -1,0 +1,118 @@
+{
+  "sheet": "controls",
+  "about": "ROUNDS controls on the blob. Player 1 gets ROUNDS's keyboard and mouse layout in levels (read directly, so Cuphead's saved bindings are never changed); Cuphead's own bindings and gamepads keep working. CupheadButton ids from Cuphead's CupheadButton enum.",
+  "columns": {
+    "id": "action",
+    "cupheadButton": "Rewired action id read from the player's Cuphead input (-1 = none)",
+    "keyboardExtra": "ROUNDS-style extra for the keyboard player (player 1 only)",
+    "gamepadExtra": "extra on the player's gamepad",
+    "symbol": "Class.Method that reads it",
+    "notes": "behaviour"
+  },
+  "rows": [
+    {
+      "id": "move",
+      "cupheadButton": 0,
+      "keyboardExtra": "A / D (Cuphead's move keys also work)",
+      "gamepadExtra": "left stick",
+      "symbol": "BlobInput.Move",
+      "notes": "Cuphead's motor walks; speed comes from the build"
+    },
+    {
+      "id": "jump",
+      "cupheadButton": 2,
+      "keyboardExtra": "W / Space (Cuphead's jump key also works)",
+      "gamepadExtra": "A",
+      "symbol": "BlobInput.JumpDown",
+      "notes": "in the air: extra jump if the build has one, against a wall: wall jump"
+    },
+    {
+      "id": "aim",
+      "cupheadButton": 1,
+      "keyboardExtra": "mouse, with a ROUNDS-style crosshair; always on for player 1 unless the right stick is in use",
+      "gamepadExtra": "right stick",
+      "symbol": "BlobInput.Aim",
+      "notes": "free 360 aim; with no mouse or stick input it falls back to the 8-way direction held"
+    },
+    {
+      "id": "shoot",
+      "cupheadButton": 3,
+      "keyboardExtra": "left mouse",
+      "gamepadExtra": "right trigger",
+      "symbol": "BlobInput.ShootHeld",
+      "notes": "auto fire while held unless a card makes it semi-auto"
+    },
+    {
+      "id": "block",
+      "cupheadButton": 7,
+      "keyboardExtra": "right mouse",
+      "gamepadExtra": "left trigger / B",
+      "symbol": "BlobInput.BlockDown",
+      "notes": "Cuphead's Dash button blocks (the blob has no dash); EX button also blocks"
+    },
+    {
+      "id": "block_alt",
+      "cupheadButton": 4,
+      "keyboardExtra": "none",
+      "gamepadExtra": "none",
+      "symbol": "BlobInput.BlockDown",
+      "notes": "EX/Super button also blocks, since the blob has no EX or super"
+    },
+    {
+      "id": "lock",
+      "cupheadButton": 6,
+      "keyboardExtra": "none",
+      "gamepadExtra": "none",
+      "symbol": "BlobInput.Locked",
+      "notes": "Cuphead lock: stand still and aim with the move keys"
+    },
+    {
+      "id": "pick_left",
+      "cupheadButton": 18,
+      "keyboardExtra": "A / left arrow",
+      "gamepadExtra": "d-pad / left stick",
+      "symbol": "PickOverlay.ReadInput",
+      "notes": "card pick screen"
+    },
+    {
+      "id": "pick_right",
+      "cupheadButton": 20,
+      "keyboardExtra": "D / right arrow",
+      "gamepadExtra": "d-pad / left stick",
+      "symbol": "PickOverlay.ReadInput",
+      "notes": "card pick screen"
+    },
+    {
+      "id": "pick_accept",
+      "cupheadButton": 13,
+      "keyboardExtra": "left mouse on a card / Enter",
+      "gamepadExtra": "A",
+      "symbol": "PickOverlay.ReadInput",
+      "notes": "take the highlighted card"
+    },
+    {
+      "id": "shop_pack",
+      "cupheadButton": 6,
+      "keyboardExtra": "P",
+      "gamepadExtra": "Lock button",
+      "symbol": "ShopPackOverlay.ReadInput",
+      "notes": "buy a card pack at Porkrind's"
+    },
+    {
+      "id": "drop",
+      "cupheadButton": 1,
+      "keyboardExtra": "S + jump",
+      "gamepadExtra": "down + jump",
+      "symbol": "BlobInput.DownHeld",
+      "notes": "drop through a platform"
+    },
+    {
+      "id": "crosshair",
+      "cupheadButton": -1,
+      "keyboardExtra": "follows the mouse",
+      "gamepadExtra": "none",
+      "symbol": "BlobBody.UpdateCrosshair",
+      "notes": "drawn in the level because Cuphead hides the cursor"
+    }
+  ]
+}

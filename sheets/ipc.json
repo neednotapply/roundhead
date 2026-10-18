@@ -1,0 +1,97 @@
+{
+  "sheet": "ipc",
+  "about": "Messages between Cuphead (client) and the ROUNDS card engine (server) over a localhost TCP socket, one JSON object per line. The engine writes its port to %LOCALAPPDATA%/CupRounds/engine.port once ROUNDS has loaded every card. Nothing from ROUNDS is written to disk; images travel as base64 PNG in memory.",
+  "columns": {
+    "id": "message op",
+    "request": "fields Cuphead sends (besides op)",
+    "response": "fields the engine answers with",
+    "server": "handler method in src/CardEngine",
+    "client": "caller method in src/CupheadMod"
+  },
+  "rows": [
+    {
+      "id": "hello",
+      "request": "version",
+      "response": "ok, cardCount, roundsVersion, mods",
+      "server": "EngineServer.OnHello",
+      "client": "EngineClient.Hello"
+    },
+    {
+      "id": "catalog",
+      "request": "none",
+      "response": "cards[id, name, description, rarity, theme, colorHex, stats[text]]",
+      "server": "EngineServer.OnCatalog",
+      "client": "EngineClient.Catalog"
+    },
+    {
+      "id": "offer",
+      "request": "owned[], count, seed",
+      "response": "ids[]",
+      "server": "EngineServer.OnOffer",
+      "client": "EngineClient.Offer"
+    },
+    {
+      "id": "render",
+      "request": "id",
+      "response": "png, width, height",
+      "server": "EngineServer.OnRender",
+      "client": "EngineClient.Render"
+    },
+    {
+      "id": "build",
+      "request": "owned[]",
+      "response": "stats (BuildStats), partial[] card names whose custom code does more than stats",
+      "server": "EngineServer.OnBuild",
+      "client": "EngineClient.Build"
+    },
+    {
+      "id": "skin",
+      "request": "slot",
+      "response": "color, shade, faceParts[png,x,y,w,h], gun png, bullet png, faceUnitsPerDiameter",
+      "server": "EngineServer.OnSkin",
+      "client": "EngineClient.Skin"
+    },
+    {
+      "id": "ping",
+      "request": "none",
+      "response": "ok",
+      "server": "EngineServer.OnPing",
+      "client": "EngineClient.Ping"
+    },
+    {
+      "id": "pose",
+      "request": "slot, vx, vy, height, ax, ay, grounded, shoot, block, hit, dead",
+      "response": "none (the engine moves that player's ROUNDS puppet)",
+      "server": "EngineServer.OnPose",
+      "client": "EngineClient.Pose"
+    },
+    {
+      "id": "frames",
+      "request": "none (second localhost socket, port in frames.port)",
+      "response": "binary frames: int32 length, byte slot, uint16 width, uint16 height, RGBA pixels of the animated ROUNDS character",
+      "server": "FrameServer.Broadcast",
+      "client": "FrameClient.Run"
+    },
+    {
+      "id": "arena_cards",
+      "request": "slot, owned",
+      "response": "ok (ROUNDS gives that player every owned card it does not have yet, through ApplyCardStats)",
+      "server": "Arena.SetCards",
+      "client": "ArenaClient.SyncCards"
+    },
+    {
+      "id": "arena",
+      "request": "none (shared memory Local\\CupRoundsArena3, ArenaLink.cs: control written by Cuphead every frame = camera, pause flag, per-player input (press counters), level colliders, events (damage, pit, spawn with a life number), pick requests)",
+      "response": "result written by ROUNDS every frame = heartbeat first, players' position, velocity, health, block, dead, cards held and the last life number done (Cuphead ignores a slot until it matches), bullet hits on Cuphead targets, picked cards, plus the rendered ROUNDS layer in three frame buffers",
+      "server": "Arena.Update",
+      "client": "ArenaClient.Tick"
+    },
+    {
+      "id": "arena_probe",
+      "request": "slot (developer bench only)",
+      "response": "ok, cardCount, ids[0] = JSON of the ROUNDS player's health, lifesteal, gun and movement stats and reward-card fields",
+      "server": "EngineServer.OnArenaProbe",
+      "client": "dev:cardprobe.py"
+    }
+  ]
+}

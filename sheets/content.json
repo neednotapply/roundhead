@@ -1,0 +1,83 @@
+{
+  "sheet": "content",
+  "about": "What each game brings, and how it is read. Nothing from either game is copied into the other game's folder or into the upload.",
+  "columns": {
+    "id": "content",
+    "game": "rounds | cuphead | thunderstore",
+    "what": "the real content",
+    "read": "how it is read at runtime",
+    "ipc": "ipc.id carrying it, or none"
+  },
+  "rows": [
+    {
+      "id": "card_list",
+      "game": "rounds",
+      "what": "every ROUNDS card (base game + installed card mods): name, description, rarity, colour theme, stat lines",
+      "read": "CardChoice.instance.cards in the running ROUNDS",
+      "ipc": "catalog"
+    },
+    {
+      "id": "card_art",
+      "game": "rounds",
+      "what": "the real ROUNDS card faces with their animated art",
+      "read": "ROUNDS instantiates the card and renders it with its own camera to a texture",
+      "ipc": "render"
+    },
+    {
+      "id": "card_math",
+      "game": "rounds",
+      "what": "each card's stat changes",
+      "read": "Gun / CharacterStatModifiers / Block components on the card prefab, folded with ROUNDS's own ApplyStats rules",
+      "ipc": "build"
+    },
+    {
+      "id": "card_rules",
+      "game": "rounds",
+      "what": "rarity weights, allowMultiple, blacklisted categories",
+      "read": "CardInfo fields on each card",
+      "ipc": "offer"
+    },
+    {
+      "id": "blob_face",
+      "game": "rounds",
+      "what": "the player's own saved ROUNDS face (eyes, mouth, details), built and rendered by ROUNDS; worn in levels and on the world map",
+      "read": "CharacterCreatorHandler faces + CharacterCreatorItemLoader sprites",
+      "ipc": "skin"
+    },
+    {
+      "id": "blob_colors",
+      "game": "rounds",
+      "what": "ROUNDS team colours (orange, blue)",
+      "read": "PlayerSkinBank.GetPlayerSkinColors",
+      "ipc": "skin"
+    },
+    {
+      "id": "gun_sprite",
+      "game": "rounds",
+      "what": "ROUNDS gun and bullet sprites",
+      "read": "player prefab holdable gun SpriteRenderer and bullet prefab",
+      "ipc": "skin"
+    },
+    {
+      "id": "card_mods",
+      "game": "thunderstore",
+      "what": "ROUNDS card mods the player chooses",
+      "read": "launcher downloads them from thunderstore.io into the mashup's own ROUNDS profile",
+      "ipc": "none"
+    },
+    {
+      "id": "cuphead_world",
+      "game": "cuphead",
+      "what": "the whole campaign: map, bosses, run-and-gun levels, music, story, shop, saves",
+      "read": "Cuphead itself is the host; the plugin only patches the player",
+      "ipc": "none"
+    },
+    {
+      "id": "player_character",
+      "game": "rounds",
+      "what": "the real ROUNDS player character with its own animation: particle skin in team colour, saved face, IK legs that step, IK arms (one holding the swaying gun, one carrying the block orb), jump and land smoke, block burst, hit blink",
+      "read": "ROUNDS instantiates its own player prefab as a puppet, drives it from the blob's pose and renders it with its own camera",
+      "ipc": "frames"
+    }
+  ]
+}

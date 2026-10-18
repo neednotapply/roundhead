@@ -1,0 +1,83 @@
+{
+  "sheet": "components",
+  "about": "Every file in the release zip and where Melty installs it. Third-party files are redistributable (license column). No game files.",
+  "columns": {
+    "id": "file group",
+    "zipPath": "path inside the release zip",
+    "to": "install destination (Melty folder token)",
+    "license": "license and author",
+    "built": "build step that produces it"
+  },
+  "rows": [
+    {
+      "id": "launcher",
+      "zipPath": "managed/CupRoundsLauncher.exe",
+      "to": "{managed}",
+      "license": "MIT, CupRounds",
+      "built": "src/Launcher"
+    },
+    {
+      "id": "cuphead_plugin",
+      "zipPath": "managed/cuphead/BepInEx/plugins/CupRounds/CupRounds.Cuphead.dll",
+      "to": "{managed}/cuphead/BepInEx/plugins/CupRounds",
+      "license": "MIT, CupRounds",
+      "built": "src/CupheadMod"
+    },
+    {
+      "id": "cuphead_bepinex",
+      "zipPath": "managed/cuphead/BepInEx/core/",
+      "to": "{managed}/cuphead/BepInEx/core",
+      "license": "MIT, BepInEx team (bundles HarmonyX, MonoMod, Mono.Cecil: MIT)",
+      "built": "BepInEx_win_x64_5.4.23.2"
+    },
+    {
+      "id": "engine_plugin",
+      "zipPath": "managed/rounds/BepInEx/plugins/CupRounds.CardEngine/CupRounds.CardEngine.dll",
+      "to": "{managed}/rounds/BepInEx/plugins/CupRounds.CardEngine",
+      "license": "MIT, CupRounds",
+      "built": "src/CardEngine"
+    },
+    {
+      "id": "rounds_bepinex",
+      "zipPath": "managed/rounds/BepInEx/core/",
+      "to": "{managed}/rounds/BepInEx/core",
+      "license": "MIT, BepInEx team (bundles HarmonyX, MonoMod, Mono.Cecil: MIT)",
+      "built": "BepInEx_win_x64_5.4.23.2"
+    },
+    {
+      "id": "doorstop_cuphead",
+      "zipPath": "proxy-cuphead/version.dll",
+      "to": "{game}",
+      "license": "LGPL-2.1, NeighTools UnityDoorstop 4.3",
+      "built": "BepInEx_win_x64_5.4.23.2 winhttp.dll renamed"
+    },
+    {
+      "id": "doorstop_rounds",
+      "zipPath": "proxy-rounds/version.dll",
+      "to": "{game:custom-rounds}",
+      "license": "LGPL-2.1, NeighTools UnityDoorstop 4.3",
+      "built": "BepInEx_win_x64_5.4.23.2 winhttp.dll renamed"
+    },
+    {
+      "id": "notices",
+      "zipPath": "managed/third-party-notices/",
+      "to": "{managed}/third-party-notices",
+      "license": "texts",
+      "built": "copied from BepInEx and UnityDoorstop"
+    },
+    {
+      "id": "readme",
+      "zipPath": "managed/README.md",
+      "to": "{managed}",
+      "license": "MIT, CupRounds",
+      "built": "written"
+    },
+    {
+      "id": "license",
+      "zipPath": "managed/LICENSE.txt",
+      "to": "{managed}",
+      "license": "MIT, Roundhead",
+      "built": "written"
+    }
+  ]
+}

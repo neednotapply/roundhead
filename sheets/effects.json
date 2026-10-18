@@ -1,0 +1,160 @@
+{
+  "sheet": "effects",
+  "about": "Cuphead-side systems of the ROUNDS blob. Each row is one method in the Cuphead plugin (symbol) that turns Build stats into gameplay. tuning lists the conversion constants it uses.",
+  "columns": {
+    "id": "effect id referenced by stats.effect",
+    "system": "gun | bullet | body | block",
+    "does": "what the player sees",
+    "symbol": "Class.Method in src/CupheadMod that implements it (preflight checks it exists)",
+    "tuning": "tuning ids used, comma separated, or none"
+  },
+  "rows": [
+    {
+      "id": "gun_damage",
+      "system": "gun",
+      "does": "Each bullet hits Cuphead enemies for ROUNDS damage x damageScale (times bullet damage multiplier, plus percentage damage as a flat bonus on bosses)",
+      "symbol": "RoundsGun.BulletDamage",
+      "tuning": "damageScale,baseBulletDamage,percentDamageFlat"
+    },
+    {
+      "id": "gun_firerate",
+      "system": "gun",
+      "does": "Time between shots is ROUNDS attackSpeed (or the locked attack speed); semi-auto cards need a fresh press",
+      "symbol": "RoundsGun.ShotCooldown",
+      "tuning": "minShotCooldown"
+    },
+    {
+      "id": "gun_pattern",
+      "system": "gun",
+      "does": "Several projectiles per shot with ROUNDS spread and even spread, bursts with time between bullets",
+      "symbol": "RoundsGun.FireShot",
+      "tuning": "spreadDegreesPerUnit,maxProjectilesPerShot"
+    },
+    {
+      "id": "gun_ammo",
+      "system": "gun",
+      "does": "Ammo pips under the blob; reloads automatically when empty or after a pause, ammo regeneration refills over time",
+      "symbol": "RoundsGun.UpdateAmmo",
+      "tuning": "baseReloadTime,idleReloadDelay"
+    },
+    {
+      "id": "gun_charge",
+      "system": "gun",
+      "does": "Charge cards: holding shoot charges, release fires with charge damage multiplier",
+      "symbol": "RoundsGun.UpdateCharge",
+      "tuning": "chargeTime"
+    },
+    {
+      "id": "bullet_motion",
+      "system": "bullet",
+      "does": "Bullets fly at ROUNDS speed with ROUNDS gravity and drag; optional lifetime",
+      "symbol": "RoundsBullet.Move",
+      "tuning": "baseBulletSpeed,baseBulletGravity,dragScale"
+    },
+    {
+      "id": "bullet_bounce",
+      "system": "bullet",
+      "does": "Bounces off floors, walls and the screen edge (reflects), smart bounce turns toward the nearest enemy, speed and damage change per bounce",
+      "symbol": "RoundsBullet.Bounce",
+      "tuning": "bounceProbe"
+    },
+    {
+      "id": "bullet_size",
+      "system": "bullet",
+      "does": "Bigger bullets and bigger hitboxes",
+      "symbol": "RoundsBullet.ApplySize",
+      "tuning": "bulletSizePerUnit"
+    },
+    {
+      "id": "bullet_falloff",
+      "system": "bullet",
+      "does": "Damage grows or shrinks with distance travelled",
+      "symbol": "RoundsBullet.DistanceMultiplier",
+      "tuning": "falloffDistance"
+    },
+    {
+      "id": "bullet_walls",
+      "system": "bullet",
+      "does": "Ghost bullets pass through ground and walls",
+      "symbol": "RoundsBullet.ApplyWalls",
+      "tuning": "none"
+    },
+    {
+      "id": "bullet_look",
+      "system": "bullet",
+      "does": "Bullet tint from card colours; poison/slow and knockback cards tint and scale the impact effect",
+      "symbol": "RoundsBullet.ApplyLook",
+      "tuning": "none"
+    },
+    {
+      "id": "body_recoil",
+      "system": "body",
+      "does": "Shooting nudges the blob backwards a little, more with recoil cards",
+      "symbol": "BlobBody.ApplyRecoil",
+      "tuning": "recoilPush"
+    },
+    {
+      "id": "body_health",
+      "system": "body",
+      "does": "ROUNDS max health becomes Cuphead hearts (34 health per heart, up to 9); regeneration and life steal refill hearts; decay cards add a short invulnerability after a hit",
+      "symbol": "BlobHealth.ApplyBuild",
+      "tuning": "healthPerHeart,maxHearts"
+    },
+    {
+      "id": "body_respawn",
+      "system": "body",
+      "does": "Respawn cards bring the blob back with full hearts instead of dying, once per card per level",
+      "symbol": "BlobHealth.TryRespawn",
+      "tuning": "none"
+    },
+    {
+      "id": "body_move",
+      "system": "body",
+      "does": "ROUNDS's own run physics (push, drag, air control from the ROUNDS player prefab), scaled to Cuphead's screen; speed cards scale the push",
+      "symbol": "BlobMotor.ApplyMove",
+      "tuning": "roundsMoveForce,roundsExtraDrag,roundsAirControl,moveWorldScale"
+    },
+    {
+      "id": "body_jump",
+      "system": "body",
+      "does": "ROUNDS's jump (impulse plus hold lift), ROUNDS's growing gravity, extra air jumps from cards, ROUNDS wall jump and slide, gravity and jump cards",
+      "symbol": "BlobMotor.ApplyJump",
+      "tuning": "roundsUpForce,roundsJumpHold,roundsGravityForce,roundsGravityExponent,roundsBaseGravity,moveWorldScale"
+    },
+    {
+      "id": "body_look",
+      "system": "body",
+      "does": "the real ROUNDS character, animated by ROUNDS (puppet frames), drawn over the hidden Cuphead sprite; a drawn blob only while those frames are not arriving; size cards scale it",
+      "symbol": "BlobBody.ApplyLook",
+      "tuning": "blobDiameter"
+    },
+    {
+      "id": "block_cooldown",
+      "system": "block",
+      "does": "ROUNDS block: brief invulnerability and parry, 4 s cooldown changed by cards, extra blocks chain",
+      "symbol": "BlobBlock.Cooldown",
+      "tuning": "baseBlockCooldown,blockWindow"
+    },
+    {
+      "id": "block_heal",
+      "system": "block",
+      "does": "Healing on block",
+      "symbol": "BlobBlock.Heal",
+      "tuning": "healthPerHeart"
+    },
+    {
+      "id": "block_dash",
+      "system": "block",
+      "does": "Block force cards push the blob in the direction held",
+      "symbol": "BlobBlock.Dash",
+      "tuning": "blockForceScale"
+    },
+    {
+      "id": "block_auto",
+      "system": "block",
+      "does": "Auto-block cards block a hit automatically when the block is ready",
+      "symbol": "BlobBlock.AutoBlock",
+      "tuning": "none"
+    }
+  ]
+}

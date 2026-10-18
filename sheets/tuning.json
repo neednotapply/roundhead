@@ -1,0 +1,432 @@
+{
+  "sheet": "tuning",
+  "about": "Conversion constants between ROUNDS units and Cuphead units. Cuphead player is 50x105 units; Peashooter does 4 damage every 0.11 s (36 dps). A fresh ROUNDS gun (55 dmg, 0.3 s, 3 ammo, 1.5 s reload) is ~79 ROUNDS dps; damageScale puts it at ~75% of the Peashooter so cards matter.",
+  "columns": {
+    "id": "constant",
+    "value": "number",
+    "unit": "unit",
+    "why": "reason"
+  },
+  "rows": [
+    {
+      "id": "damageScale",
+      "value": 0.35,
+      "unit": "cuphead dmg per rounds dmg",
+      "why": "fresh ROUNDS gun ~27 dps vs Peashooter 36"
+    },
+    {
+      "id": "baseBulletDamage",
+      "value": 55,
+      "unit": "rounds dmg",
+      "why": "ROUNDS bullet ProjectileHit.damage"
+    },
+    {
+      "id": "percentDamageFlat",
+      "value": 60,
+      "unit": "cuphead dmg per 1.0",
+      "why": "percentage-of-max-health cards would one-shot bosses; give a flat bonus instead"
+    },
+    {
+      "id": "minShotCooldown",
+      "value": 0.05,
+      "unit": "s",
+      "why": "cap fire rate so stacked attack speed cards cannot freeze the game"
+    },
+    {
+      "id": "spreadDegreesPerUnit",
+      "value": 57.3,
+      "unit": "deg per spread",
+      "why": "ROUNDS spread is radians-like; 1.0 spread ~ 57 degrees cone"
+    },
+    {
+      "id": "maxProjectilesPerShot",
+      "value": 30,
+      "unit": "count",
+      "why": "performance cap"
+    },
+    {
+      "id": "baseReloadTime",
+      "value": 1.5,
+      "unit": "s",
+      "why": "ROUNDS GunAmmo.reloadTime"
+    },
+    {
+      "id": "idleReloadDelay",
+      "value": 1.0,
+      "unit": "s",
+      "why": "ROUNDS reloads when you stop shooting for a moment"
+    },
+    {
+      "id": "chargeTime",
+      "value": 1.0,
+      "unit": "s",
+      "why": "full charge time for charge cards"
+    },
+    {
+      "id": "baseBulletSpeed",
+      "value": 1500,
+      "unit": "cuphead units/s",
+      "why": "ROUNDS bullets are slower than the Peashooter (2250) and arc"
+    },
+    {
+      "id": "baseBulletGravity",
+      "value": 900,
+      "unit": "cuphead units/s2",
+      "why": "visible ROUNDS arc across a Cuphead arena"
+    },
+    {
+      "id": "dragScale",
+      "value": 60,
+      "unit": "cuphead units per rounds unit",
+      "why": "1 ROUNDS unit ~ 60 Cuphead units (blob 80 units wide)"
+    },
+    {
+      "id": "bounceProbe",
+      "value": 24,
+      "unit": "cuphead units",
+      "why": "raycast length ahead of a bullet to find a surface to bounce off"
+    },
+    {
+      "id": "bulletSizePerUnit",
+      "value": 0.6,
+      "unit": "scale per size",
+      "why": "ROUNDS size +1 is a big bullet; +60% scale"
+    },
+    {
+      "id": "falloffDistance",
+      "value": 1200,
+      "unit": "cuphead units",
+      "why": "distance at which the full distance multiplier applies"
+    },
+    {
+      "id": "recoilPush",
+      "value": 60,
+      "unit": "cuphead units/s",
+      "why": "small backwards nudge per shot"
+    },
+    {
+      "id": "healthPerHeart",
+      "value": 34,
+      "unit": "rounds hp",
+      "why": "100 hp is 3 Cuphead hearts"
+    },
+    {
+      "id": "maxHearts",
+      "value": 9,
+      "unit": "hearts",
+      "why": "Cuphead HEALTH_TRUE_MAX"
+    },
+    {
+      "id": "blobDiameter",
+      "value": 84,
+      "unit": "cuphead units",
+      "why": "a little wider than Cuphead's 50 unit body, as tall as his torso"
+    },
+    {
+      "id": "ghostAlpha",
+      "value": 0.55,
+      "unit": "alpha",
+      "why": "How see-through the ROUNDS-style ghost of a dead player is (it floats where Cuphead's ghost would, above the parry heart)"
+    },
+    {
+      "id": "baseBlockCooldown",
+      "value": 4.0,
+      "unit": "s",
+      "why": "ROUNDS Block.cooldown"
+    },
+    {
+      "id": "blockWindow",
+      "value": 0.3,
+      "unit": "s",
+      "why": "ROUNDS block invulnerability window"
+    },
+    {
+      "id": "blockForceScale",
+      "value": 40,
+      "unit": "cuphead units/s per force",
+      "why": "block-dash cards"
+    },
+    {
+      "id": "roundsMoveForce",
+      "value": 17000,
+      "unit": "ROUNDS PlayerMovement.force",
+      "why": "read from the ROUNDS player prefab: 170 ROUNDS units/s2 push"
+    },
+    {
+      "id": "roundsExtraDrag",
+      "value": 200,
+      "unit": "ROUNDS PlayerMovement.extraDrag",
+      "why": "read from the prefab: 10/s drag, top speed 17 ROUNDS units/s in 0.2 s"
+    },
+    {
+      "id": "roundsAirControl",
+      "value": 0.8,
+      "unit": "ROUNDS PlayerMovement.airControl",
+      "why": "read from the prefab: push and drag in the air"
+    },
+    {
+      "id": "roundsUpForce",
+      "value": 5500,
+      "unit": "ROUNDS PlayerJump.upForce",
+      "why": "read from the prefab: 55 ROUNDS units/s jump impulse plus 220/s2 while held for 0.2 s"
+    },
+    {
+      "id": "roundsJumpHold",
+      "value": 0.2,
+      "unit": "s",
+      "why": "ROUNDS PlayerJump: holding jump adds lift for 0.2 s"
+    },
+    {
+      "id": "roundsGravityForce",
+      "value": 1000,
+      "unit": "ROUNDS Gravity.gravityForce",
+      "why": "read from the prefab: gravity grows with time in the air"
+    },
+    {
+      "id": "roundsGravityExponent",
+      "value": 1.5,
+      "unit": "ROUNDS Gravity.exponent",
+      "why": "read from the prefab"
+    },
+    {
+      "id": "roundsBaseGravity",
+      "value": 20,
+      "unit": "ROUNDS units/s2",
+      "why": "ROUNDS PlayerVelocity always pulls down 20/s2"
+    },
+    {
+      "id": "moveWorldScale",
+      "value": 37,
+      "unit": "cuphead units per ROUNDS unit (movement)",
+      "why": "a ROUNDS arena is ~35 units wide, Cuphead's ~1280: same screen-crossing time and jump height relative to the screen"
+    },
+    {
+      "id": "arenaHitCooldown",
+      "value": 1.0,
+      "unit": "s",
+      "why": "Cuphead's own hit invulnerability: one boss touch costs ROUNDS health once, not every frame"
+    },
+    {
+      "id": "pitDamage",
+      "value": 51,
+      "unit": "rounds hp",
+      "why": "ROUNDS OutOfBoundsHandler: falling off the screen bottom bounces you back up for 51 damage"
+    },
+    {
+      "id": "hitKnockback",
+      "value": 25,
+      "unit": "ROUNDS units/s",
+      "why": "a Cuphead hit pushes the ROUNDS player away from the source, like a ROUNDS bullet hit"
+    },
+    {
+      "id": "arenaMaxFrameWidth",
+      "value": 1280,
+      "unit": "pixels",
+      "why": "ROUNDS layer resolution cap (shared frame buffers are 1280x720)"
+    },
+    {
+      "id": "roundsWaitSeconds",
+      "value": 90,
+      "unit": "s",
+      "why": "how long a level holds the hidden player with a 'ROUNDS is starting' note before falling back to the stand-in blob"
+    },
+    {
+      "id": "enemySlowScale",
+      "value": 1,
+      "unit": "x of ROUNDS slow",
+      "why": "Minions take ROUNDS slow as is (ROUNDS caps it at 0.9)"
+    },
+    {
+      "id": "bossSlowScale",
+      "value": 0.6,
+      "unit": "x of ROUNDS slow",
+      "why": "A boss is at most 54% slower: Frost Slam and Static Field still read clearly, but stacking cannot make a boss nearly static"
+    },
+    {
+      "id": "enemyStunCap",
+      "value": 2,
+      "unit": "s",
+      "why": "Longest continuous freeze of a minion per stun episode"
+    },
+    {
+      "id": "bossStunCap",
+      "value": 1,
+      "unit": "s",
+      "why": "Longest continuous boss freeze per episode; Supernova's 1.5 s becomes 1.0 s"
+    },
+    {
+      "id": "bossStunBudget",
+      "value": 2,
+      "unit": "s",
+      "why": "Frozen seconds a boss can take inside one bossStunWindow before it becomes immune"
+    },
+    {
+      "id": "bossStunWindow",
+      "value": 8,
+      "unit": "s",
+      "why": "How fast the boss stun budget refills (bossStunBudget per bossStunWindow)"
+    },
+    {
+      "id": "bossStunImmunity",
+      "value": 3,
+      "unit": "s",
+      "why": "Dazzle and Spray stuns or chained block stuns cannot lock a boss"
+    },
+    {
+      "id": "phaseChangeImmunity",
+      "value": 1.5,
+      "unit": "s",
+      "why": "After a boss phase change its statuses are cleared and none apply for this long: transition animations and their coroutines run at full speed (softlock guard)"
+    },
+    {
+      "id": "statusStaleSeconds",
+      "value": 0.5,
+      "unit": "s (real time)",
+      "why": "If ROUNDS stops rewriting R_StatusFrame for this long, every enemy status is cleared"
+    },
+    {
+      "id": "maxWaitStretch",
+      "value": 4,
+      "unit": "x",
+      "why": "Upper bound on how far a slowed enemy's CupheadTime.WaitForSeconds can stretch"
+    },
+    {
+      "id": "maxWaitExtra",
+      "value": 3,
+      "unit": "s",
+      "why": "Extra game-time slack on top of the stretch (for stuns); then the wait always ends"
+    },
+    {
+      "id": "slowDutyCycle",
+      "value": 1,
+      "unit": "bool",
+      "why": "Duty-cycling IsHitPaused slows the ~20 physics-step movers proportionally; set to 0 if the movement judder looks bad"
+    },
+    {
+      "id": "silenceSpawnPad",
+      "value": 60,
+      "unit": "cuphead units",
+      "why": "How far outside a silenced enemy's hit area or drawn body a new projectile still counts as fired by it (its spit leaves a mouth the hit area may not cover)"
+    },
+    {
+      "id": "lightEnemyMaxSize",
+      "value": 220,
+      "unit": "cuphead units",
+      "why": "A non-boss hit area up to this size can be displaced (and gets the full Thruster time); for platforming minions only self-moving types (ground walkers, path movers, Balloon, Acorn, Duck, Jack, Fish, Krill); stationary or scripted ones, and anything carrying level geometry, flinch instead"
+    },
+    {
+      "id": "enemyPushScale",
+      "value": 0.25,
+      "unit": "x",
+      "why": "Converts ROUNDS's velocity change for a 100-mass body into a minion push"
+    },
+    {
+      "id": "enemyPushDrag",
+      "value": 8,
+      "unit": "1/s",
+      "why": "Exponential decay of a minion push: total displacement is roughly dv x enemyPushScale / drag"
+    },
+    {
+      "id": "enemyPushMaxSpeed",
+      "value": 1500,
+      "unit": "cuphead units/s",
+      "why": "Saw (force 3e6) and Thruster cannot fling minions off-screen in one frame"
+    },
+    {
+      "id": "flinchThreshold",
+      "value": 2800,
+      "unit": "cuphead units/s (dv)",
+      "why": "Explosions, bombs, Shockwave and heavy bullets flinch a boss; ordinary bullets do not"
+    },
+    {
+      "id": "flinchTime",
+      "value": 0.15,
+      "unit": "s",
+      "why": "Cuphead's own DamageReceiver.ENEMY_HIT_PAUSE_TIME"
+    },
+    {
+      "id": "flinchCooldown",
+      "value": 0.8,
+      "unit": "s",
+      "why": "Limits flinch downtime to under 20%"
+    },
+    {
+      "id": "heavySlow",
+      "value": 0.3,
+      "unit": "slow fraction",
+      "why": "How PCE Grounded's triple gravity shows on enemies that have no gravity"
+    },
+    {
+      "id": "flipStun",
+      "value": 0.3,
+      "unit": "s",
+      "why": "How PCE Flip's reversed gravity shows: a short stagger (through the stun governor)"
+    },
+    {
+      "id": "flipHopSpeed",
+      "value": 700,
+      "unit": "cuphead units/s",
+      "why": "The upward hop given to light flyers by PCE Flip"
+    },
+    {
+      "id": "goldSlow",
+      "value": 0.5,
+      "unit": "slow fraction",
+      "why": "PCE GoldEffect is -50% movement until death"
+    },
+    {
+      "id": "statusTintStrength",
+      "value": 0.55,
+      "unit": "0..1",
+      "why": "How strongly status colours tint enemy sprites; stays readable over Cuphead's palette"
+    },
+    {
+      "id": "lifestealVsEnemyScale",
+      "value": 1,
+      "unit": "x",
+      "why": "Faithful by default; boss HP pools are huge, so this knob exists if lifesteal proves too strong"
+    },
+    {
+      "id": "cursorAimReach",
+      "value": 400,
+      "unit": "cuphead units",
+      "why": "Without the mouse, the Remote cursor sent to ROUNDS is this far along the player's aim"
+    },
+    {
+      "id": "blockedHitCooldown",
+      "value": 0.1,
+      "unit": "s",
+      "why": "A Cuphead hit taken during the ROUNDS block reaches ROUNDS as EvBlockedHit at most this often (contact damage repeats every frame)"
+    },
+    {
+      "id": "murderSettle",
+      "value": 4,
+      "unit": "s",
+      "why": "Saved Murder stacks are spent this long (Cuphead game time) after an arena level has started, once some enemy can take statuses, so they never land in the intro"
+    },
+    {
+      "id": "colliderEvictSeconds",
+      "value": 5,
+      "unit": "s",
+      "why": "A Cuphead collider that has been off (inactive, disabled or a dead target) this long leaves the collider table and ROUNDS drops its mirror; it is written again the frame it comes back"
+    },
+    {
+      "id": "gunShade",
+      "value": 0.1,
+      "unit": "grey level",
+      "why": "ROUNDS guns are black: in ROUNDS the gun's sprites stay off and the gun shows as its soft shadow (SFPolygon) on the dark screen. Our frame has no shadow pass, so the gun sprites are drawn in this grey (arena players after ROUNDS colours a gun, and the world-map puppet)"
+    },
+    {
+      "id": "deckCap",
+      "value": 0,
+      "unit": "cards",
+      "why": "The most cards a deck holds (loss picks and shop packs stop at it); 0 is no cap, ROUNDS's way. A deck only grows while a level keeps beating you and is wiped when you win it, so a cap is a safety valve, not the balance"
+    },
+    {
+      "id": "uiOpacityBoost",
+      "value": 5,
+      "unit": "power",
+      "why": "ROUNDS draws its card bar for its own dark screen (a 21% fill, a 70% border). Over Cuphead's bright levels the UI frame's coverage is raised to 1-(1-a)^k so the bar reads as solid as the players; 1 leaves it as ROUNDS draws it"
+    }
+  ]
+}

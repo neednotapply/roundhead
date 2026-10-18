@@ -1,0 +1,814 @@
+{
+  "sheet": "hooks",
+  "about": "Every place the Cuphead plugin touches Cuphead's code (Harmony patches on Cuphead's Assembly-CSharp). target must exist in the decompiled game; symbol must exist in src/CupheadMod.",
+  "columns": {
+    "id": "hook id",
+    "target": "Class.Method patched: Cuphead by default, 'ROUNDS ' prefix for the card engine's patches, '(runtime patch)' when found by reflection",
+    "kind": "prefix | postfix | finalizer | transpiler",
+    "does": "what the patch does",
+    "symbol": "patch method in src/CupheadMod or src/CardEngine",
+    "effects": "effects.id served, comma separated, or none"
+  },
+  "rows": [
+    {
+      "id": "h_player_init",
+      "target": "LevelPlayerController.LevelInit",
+      "kind": "postfix",
+      "does": "attach the ROUNDS blob (body, gun, block, health) to each ground-level player",
+      "symbol": "Hooks.PlayerInit",
+      "effects": "body_look,body_move"
+    },
+    {
+      "id": "h_motor_start",
+      "target": "LevelPlayerMotor.Start",
+      "kind": "postfix",
+      "does": "set move speed and jump power from the build",
+      "symbol": "Hooks.MotorStart",
+      "effects": "body_move,body_jump"
+    },
+    {
+      "id": "h_motor_jump",
+      "target": "LevelPlayerMotor.HandleJumping",
+      "kind": "prefix",
+      "does": "ROUNDS jumps (ground, extra air jumps, wall jumps) replace Cuphead's; dropping through platforms stays Cuphead's",
+      "symbol": "Hooks.MotorJump",
+      "effects": "body_jump"
+    },
+    {
+      "id": "h_motor_gravity",
+      "target": "LevelPlayerMotor.HandleFalling",
+      "kind": "prefix",
+      "does": "ROUNDS gravity and air drag while airborne (Cuphead's own knockbacks, parry bounces and pit knock-ups are kept)",
+      "symbol": "Hooks.MotorFalling",
+      "effects": "body_jump"
+    },
+    {
+      "id": "h_motor_parry",
+      "target": "LevelPlayerMotor.HandleParry",
+      "kind": "prefix",
+      "does": "parry starts from block instead of a second jump press",
+      "symbol": "Hooks.MotorParry",
+      "effects": "block_cooldown"
+    },
+    {
+      "id": "h_motor_dash",
+      "target": "LevelPlayerMotor.HandleDash",
+      "kind": "prefix",
+      "does": "no Cuphead dash; the dash button blocks",
+      "symbol": "Hooks.MotorDash",
+      "effects": "block_cooldown"
+    },
+    {
+      "id": "h_weapon_fire",
+      "target": "LevelPlayerWeaponManager.HandleWeaponFiring",
+      "kind": "prefix",
+      "does": "Cuphead weapons, EX and supers stay silent; the ROUNDS gun fires instead",
+      "symbol": "Hooks.WeaponFiring",
+      "effects": "gun_firerate"
+    },
+    {
+      "id": "h_weapon_switch",
+      "target": "LevelPlayerWeaponManager.HandleWeaponSwitch",
+      "kind": "prefix",
+      "does": "no weapon switching",
+      "symbol": "Hooks.WeaponSwitch",
+      "effects": "none"
+    },
+    {
+      "id": "h_health_max",
+      "target": "PlayerStatsManager.CalculateHealthMax",
+      "kind": "postfix",
+      "does": "hearts from ROUNDS max health",
+      "symbol": "Hooks.HealthMax",
+      "effects": "body_health"
+    },
+    {
+      "id": "h_damage_taken",
+      "target": "PlayerStatsManager.OnDamageTaken",
+      "kind": "prefix",
+      "does": "a hit during the block window is blocked",
+      "symbol": "Hooks.DamageTaken",
+      "effects": "block_cooldown,block_auto,body_health"
+    },
+    {
+      "id": "h_death",
+      "target": "PlayerStatsManager.OnStatsDeath",
+      "kind": "prefix",
+      "does": "respawn cards save the blob",
+      "symbol": "Hooks.StatsDeath",
+      "effects": "body_respawn"
+    },
+    {
+      "id": "h_level_win",
+      "target": "Level.zHack_OnWin",
+      "kind": "postfix",
+      "does": "a won level ends the match: both decks are wiped (progression level_won; a Dice Palace mini boss keeps them)",
+      "symbol": "Hooks.LevelWin",
+      "effects": "none"
+    },
+    {
+      "id": "h_game_over_pick",
+      "target": "LevelGameOverGUI.In",
+      "kind": "postfix",
+      "does": "a lost level: each player gets a loss pick on the game-over card (progression loss)",
+      "symbol": "Hooks.GameOverIn",
+      "effects": "none"
+    },
+    {
+      "id": "h_game_over_menu",
+      "target": "LevelGameOverGUI.Update",
+      "kind": "prefix",
+      "does": "the game-over card's menu (Retry, Exit to Map, Quit) waits while the loss picks are made on it; without ROUNDS it goes on after 15 s and the picks wait for the map",
+      "symbol": "Hooks.GameOverMenu",
+      "effects": "none"
+    },
+    {
+      "id": "h_map_start",
+      "target": "Map.Start",
+      "kind": "postfix",
+      "does": "refresh the stand-in builds from the decks (a pick left over from a quit game-over card is offered here by PickOverlay)",
+      "symbol": "Hooks.MapStart",
+      "effects": "none"
+    },
+    {
+      "id": "h_slot_cleared",
+      "target": "PlayerData.ClearSlot",
+      "kind": "postfix",
+      "does": "erasing a Cuphead save slot erases its ROUNDS decks too",
+      "symbol": "Hooks.SlotCleared",
+      "effects": "none"
+    },
+    {
+      "id": "h_shop_start",
+      "target": "ShopScene.Awake",
+      "kind": "postfix",
+      "does": "add Porkrind's card pack to the shop",
+      "symbol": "Hooks.ShopStart",
+      "effects": "none"
+    },
+    {
+      "id": "h_test_nosave",
+      "target": "PlayerData.SaveCurrentFile",
+      "kind": "prefix",
+      "does": "Melty test runs never write the player's Cuphead save",
+      "symbol": "Hooks.TestNoSave",
+      "effects": "none"
+    },
+    {
+      "id": "h_map_player",
+      "target": "MapPlayerController.Start",
+      "kind": "postfix",
+      "does": "each player walks the world map as their ROUNDS blob",
+      "symbol": "Hooks.MapPlayerStart",
+      "effects": "body_look"
+    },
+    {
+      "id": "h_motor_walk",
+      "target": "LevelPlayerMotor.HandleWalking",
+      "kind": "postfix",
+      "does": "ROUNDS run momentum replaces Cuphead's instant walk speed",
+      "symbol": "Hooks.MotorWalk",
+      "effects": "body_move"
+    },
+    {
+      "id": "h_motor_fixed",
+      "target": "LevelPlayerMotor.FixedUpdate",
+      "kind": "prefix",
+      "does": "while ROUNDS's real player stands in (arena live), Cuphead's motor stays still and the player object follows ROUNDS",
+      "symbol": "Hooks.MotorFixed",
+      "effects": "body_move"
+    },
+    {
+      "id": "h_stats_revive",
+      "target": "AbstractPlayerController.OnRevive",
+      "kind": "postfix",
+      "does": "a Cuphead co-op revive brings ROUNDS's player back at full health where the ghost was parried (resent until ROUNDS confirms)",
+      "symbol": "Hooks.StatsRevive",
+      "effects": "body_respawn"
+    },
+    {
+      "id": "h_death_ghost",
+      "target": "PlayerDeathEffect.Init",
+      "kind": "postfix",
+      "does": "a ROUNDS-driven player's death: Cuphead's ghost sprite and explosion puffs stay off (ROUNDS plays its own death burst) and a ROUNDS-style ghost (RoundsGhost, in a parry-pink ring) floats in their place around Cuphead's parry heart, so co-op revives still work (PlayerSprites.DressGhost; a ghost from before the blob is dressed when the blob attaches); plane levels keep Cuphead's",
+      "symbol": "Hooks.DeathGhost",
+      "effects": "none"
+    },
+    {
+      "id": "h_death_ghost_start",
+      "target": "PlayerDeathEffect.Start",
+      "kind": "postfix",
+      "does": "the same for a ghost that never ran Init (a scene-placed TutorialPlayerDeathEffect)",
+      "symbol": "Hooks.DeathGhostStart",
+      "effects": "none"
+    },
+    {
+      "id": "h_chalice_intro",
+      "target": "LevelPlayerChaliceIntroAnimation.Create",
+      "kind": "postfix",
+      "does": "with the Astral Cookie (or Chalice carried over) the separate Cuphead/Mugman body Cuphead stands at the spawn through the intro stays off",
+      "symbol": "Hooks.ChaliceIntro",
+      "effects": "none"
+    },
+    {
+      "id": "h_house_exit",
+      "target": "HouseLevelExit.SwitchToRun",
+      "kind": "prefix",
+      "does": "leaving the tutorial house: the Cuphead/Mugman running out of the door stays off",
+      "symbol": "Hooks.HouseExit",
+      "effects": "none"
+    },
+    {
+      "id": "h_player_shadow",
+      "target": "LevelPlayerShadow.Update",
+      "kind": "postfix",
+      "does": "a ROUNDS-driven player's drop shadow is cast from the ROUNDS body, so it sits at its feet (Cuphead's cast from its own, lower, player object began inside the floor and drew a body too low) and shows while standing too",
+      "symbol": "Hooks.PlayerShadow",
+      "effects": "none"
+    },
+    {
+      "id": "h_gameover_icons",
+      "target": "LevelGameOverGUI.TimelineObjects.Setup",
+      "kind": "postfix",
+      "does": "the game-over card's boss timeline marks each player with a dot in their ROUNDS colour instead of a Cuphead/Mugman head",
+      "symbol": "Hooks.GameOverIcons",
+      "effects": "none"
+    },
+    {
+      "id": "h_death_explosion",
+      "target": "LevelPlayerDeathEffect.Init",
+      "kind": "postfix",
+      "does": "the character-shaped death explosion and its shadow stay off (a leaving player's too): ROUNDS's burst is the death",
+      "symbol": "Hooks.DeathExplosion",
+      "effects": "none"
+    },
+    {
+      "id": "h_join_effect",
+      "target": "PlayerJoinEffect.Init",
+      "kind": "postfix",
+      "does": "the Cuphead/Mugman jump-in of a mid-level join stays off; ROUNDS's revive pop-in shows the player arriving",
+      "symbol": "Hooks.JoinEffect",
+      "effects": "none"
+    },
+    {
+      "id": "h_rewired_keys",
+      "target": "Rewired.Player.GetAxis/GetButton/GetButtonDown/GetNegativeButton(Down) (runtime patch)",
+      "kind": "postfix",
+      "does": "player 1's WASD and Space work on the world map and in menus without changing Cuphead's saved bindings",
+      "symbol": "InputPatches.EnsurePatched",
+      "effects": "none"
+    },
+    {
+      "id": "e_general_input",
+      "target": "ROUNDS GeneralInput.Update",
+      "kind": "prefix",
+      "does": "ROUNDS's players read the Cuphead player's input from the arena link",
+      "symbol": "ArenaPatches.InputUpdate",
+      "effects": "body_move,gun_firerate"
+    },
+    {
+      "id": "e_out_of_bounds",
+      "target": "ROUNDS OutOfBoundsHandler.LateUpdate",
+      "kind": "prefix",
+      "does": "Cuphead's camera and pits decide the edges, not ROUNDS's fixed arena box",
+      "symbol": "ArenaPatches.OutOfBounds",
+      "effects": "none"
+    },
+    {
+      "id": "e_sandbox_died",
+      "target": "ROUNDS GM_Test.PlayerDied",
+      "kind": "prefix",
+      "does": "Cuphead decides when a fallen player comes back (co-op revive, retry)",
+      "symbol": "ArenaPatches.SandboxDied",
+      "effects": "body_respawn"
+    },
+    {
+      "id": "e_card_picked",
+      "target": "ROUNDS CardChoice.Pick",
+      "kind": "prefix",
+      "does": "record which card the player took on ROUNDS's pick screen",
+      "symbol": "ArenaPatches.Picked",
+      "effects": "none"
+    },
+    {
+      "id": "e_card_select",
+      "target": "ROUNDS CardChoice.DoPlayerSelect",
+      "kind": "prefix",
+      "does": "ROUNDS's pick screen follows the Cuphead player's keys, stick or mouse",
+      "symbol": "ArenaPatches.PlayerSelect",
+      "effects": "none"
+    },
+    {
+      "id": "e_escape_menu",
+      "target": "ROUNDS EscapeMenuHandler.Update",
+      "kind": "prefix",
+      "does": "the hidden ROUNDS ignores the gamepad's Start: its escape menu would freeze ROUNDS and its buttons could quit or reload it mid-level",
+      "symbol": "ArenaPatches.EscapeMenu",
+      "effects": "none"
+    },
+    {
+      "id": "e_quit_button",
+      "target": "ROUNDS QuitButton.Quit",
+      "kind": "prefix",
+      "does": "ROUNDS's QUIT GAME does nothing in the hidden engine (only Cuphead closing ends it)",
+      "symbol": "ArenaPatches.QuitPressed",
+      "effects": "none"
+    },
+    {
+      "id": "e_joining",
+      "target": "ROUNDS PlayerAssigner.LateUpdate",
+      "kind": "prefix",
+      "does": "no extra ROUNDS players join from a gamepad or key press; only the arena makes players",
+      "symbol": "ArenaPatches.Joining",
+      "effects": "none"
+    },
+    {
+      "id": "e_time_pause",
+      "target": "ROUNDS TimeHandler.Update",
+      "kind": "postfix",
+      "does": "ROUNDS's time stands still while Cuphead is paused or away (ROUNDS's own pause: time scale 0)",
+      "symbol": "ArenaPatches.PauseWithCuphead",
+      "effects": "none"
+    },
+    {
+      "id": "e_partner_bullet",
+      "target": "ROUNDS ProjectileHit.Hit",
+      "kind": "prefix",
+      "does": "co-op: a partner's ROUNDS bullet passes through you (own bounced bullets still hit, as in ROUNDS)",
+      "symbol": "ArenaPatches.PartnerBullet",
+      "effects": "none"
+    },
+    {
+      "id": "e_partner_damage",
+      "target": "ROUNDS HealthHandler.DoDamage",
+      "kind": "prefix",
+      "does": "co-op: no damage from a partner of any kind (explosions, card effects)",
+      "symbol": "ArenaPatches.PartnerDamage",
+      "effects": "none"
+    },
+    {
+      "id": "e_enemy_dot",
+      "target": "ROUNDS DamageOverTime.TakeDamageOverTime",
+      "kind": "prefix",
+      "does": "Poison and Parasite on a Cuphead enemy: ROUNDS's DoT tick maths run on the CupheadTarget, each tick a HitDot with the poison colour and lifesteal per tick",
+      "symbol": "ArenaEffectPatches.EnemyDot",
+      "effects": "none"
+    },
+    {
+      "id": "e_bullet_hit_start",
+      "target": "ROUNDS ProjectileHit.RPCA_DoHit",
+      "kind": "prefix",
+      "does": "records the running bullet (CupheadTarget.CurrentHit) so an enemy hit also gets the bullet's slow, knockback and ModdingUtils gravity",
+      "symbol": "ArenaEffectPatches.BulletHitStart",
+      "effects": "none"
+    },
+    {
+      "id": "e_bullet_hit_end",
+      "target": "ROUNDS ProjectileHit.RPCA_DoHit",
+      "kind": "finalizer",
+      "does": "clears the running bullet even if RPCA_DoHit throws (a nested hit gets the outer bullet back)",
+      "symbol": "ArenaEffectPatches.BulletHitEnd",
+      "effects": "none"
+    },
+    {
+      "id": "e_enemy_hold",
+      "target": "ROUNDS ProjectileHit.Hit",
+      "kind": "prefix",
+      "does": "one hit per bullet per Cuphead enemy group per holdPlayerFor (ROUNDS's playersHit for enemies): drilling or piercing bullets cannot hit every frame",
+      "symbol": "ArenaEffectPatches.HoldEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_bounce_ends",
+      "target": "ROUNDS RayHitReflect.DoHitEffect",
+      "kind": "prefix",
+      "does": "a bouncing bullet ends at a Cuphead enemy as it does at a ROUNDS player (no bouncing off bosses, no Trickster gain from the boss)",
+      "symbol": "ArenaEffectPatches.EnemyEndsBounce",
+      "effects": "none"
+    },
+    {
+      "id": "e_drill_ends",
+      "target": "ROUNDS RayHitDrill.DoHitEffect",
+      "kind": "postfix",
+      "does": "a drilling bullet ends at a Cuphead enemy as at a player instead of drilling through it like a wall (later effects such as poison still run)",
+      "symbol": "ArenaEffectPatches.DrillEndsAtEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_bullets_see_enemies",
+      "target": "ROUNDS RayCastTrail.Awake",
+      "kind": "postfix",
+      "does": "bullet size and Ghost Bullets' ignoreWallsMask include enemy hit areas (layer 15); floors and walls stay out of ignoreWallsMask",
+      "symbol": "ArenaEffectPatches.BulletsSeeEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "e_blast_start",
+      "target": "ROUNDS Explosion.Explode",
+      "kind": "prefix",
+      "does": "starts this blast's bookkeeping so each Cuphead enemy group takes the blast once, through its closest visible hit area",
+      "symbol": "ArenaEffectPatches.BlastStart",
+      "effects": "none"
+    },
+    {
+      "id": "e_blast_end",
+      "target": "ROUNDS Explosion.Explode",
+      "kind": "finalizer",
+      "does": "restores the previous blast context when Explode returns or throws",
+      "symbol": "ArenaEffectPatches.BlastEnd",
+      "effects": "none"
+    },
+    {
+      "id": "e_blast",
+      "target": "ROUNDS Explosion.DoExplosionEffects",
+      "kind": "prefix",
+      "does": "every Explosion card on Cuphead enemies: slow, silence, Overpower (15% of the blocker's max HP), HitArea damage with dmgColor, Implosion pull, force with flyingFor and stun, using ROUNDS's scale flags, line of sight and immunity, once per enemy per blast; co-op: a partner's blast only heals you",
+      "symbol": "ArenaEffectPatches.Blast",
+      "effects": "none"
+    },
+    {
+      "id": "e_particle_pulse_guard",
+      "target": "ROUNDS ParticleExplosionModifier.Start",
+      "kind": "prefix",
+      "does": "skipped on an object with no ParticleSystem (Healing field's circle: plain ROUNDS throws there)",
+      "symbol": "ArenaEffectPatches.PulseNeedsParticles",
+      "effects": "none"
+    },
+    {
+      "id": "e_gun_black",
+      "target": "ROUNDS Holdable.SetTeamColors",
+      "kind": "postfix",
+      "does": "the gun's masked sprites (Handle, Barrel) come on in gun black (tuning gunShade) with their masks off, after ROUNDS colours a gun: ROUNDS shows its gun as a soft shadow (SFPolygon), which our frame has no shadow pass for",
+      "symbol": "GunLookPatches.GunBlack",
+      "effects": "none"
+    },
+    {
+      "id": "e_overpower_guard",
+      "target": "ROUNDS Explosion_Overpower.HitPlayer",
+      "kind": "prefix",
+      "does": "safety net: no Overpower call with a null CharacterData or a missing spawner (the NRE that aborted the whole blast)",
+      "symbol": "ArenaEffectPatches.OverpowerNeedsPlayer",
+      "effects": "none"
+    },
+    {
+      "id": "e_dazzle",
+      "target": "ROUNDS StunPlayer.Go",
+      "kind": "prefix",
+      "does": "Dazzle stuns the Cuphead enemy it is attached to (no NRE); on a wall it does nothing",
+      "symbol": "ArenaEffectPatches.DazzleEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_dazzle_one",
+      "target": "ROUNDS ThereCanOnlyBeOne.Start",
+      "kind": "prefix",
+      "does": "one Dazzle per Cuphead enemy (or per map piece) instead of one for the whole shared sandbox map",
+      "symbol": "ArenaEffectPatches.OnePerEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_follow_enemy",
+      "target": "ROUNDS FollowPlayer.LateUpdate",
+      "kind": "prefix",
+      "does": "FollowPlayer{target=Other} (Chilling Presence and Lifestealer victim particles) sits on the enemy the aura chose, else the closest enemy, else is parked; no per-frame NRE and never on the partner",
+      "symbol": "ArenaEffectPatches.FollowEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "m_cone_no_partner",
+      "target": "ModdingUtils.MonoBehaviours.InConeEffect.GetAllEnemyPlayers (runtime patch)",
+      "kind": "postfix",
+      "does": "co-op: the partner no longer counts as an enemy for cone cards, so Glare does not slow them and Low Ground does not switch on from them",
+      "symbol": "ArenaModHooks.NoPartnerEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "m_cone_enemies",
+      "target": "ModdingUtils.MonoBehaviours.InConeEffect.ConditionsMet (runtime patch)",
+      "kind": "postfix",
+      "does": "a Cuphead enemy inside the cone meets the condition (range, angle and sight measured to its centre or nearest point), so Low Ground's buffs switch on with an enemy above you",
+      "symbol": "ArenaModHooks.EnemyInCone",
+      "effects": "none"
+    },
+    {
+      "id": "m_glare",
+      "target": "ModdingUtils.MonoBehaviours.InConeEffect.Update (runtime patch)",
+      "kind": "postfix",
+      "does": "PCE Glare slows every Cuphead enemy in sight by 1 - 0.85^(glare x Glare cones), renewed every frame while it stays in sight",
+      "symbol": "ArenaModHooks.GlareEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "m_king_midas",
+      "target": "PCE.MonoBehaviours.KingMidasEffect.Update (runtime patch)",
+      "kind": "prefix",
+      "does": "King Midas gilds the Cuphead enemies you touch (within 1.75 of their hit area): StGold kept, one FxGold 0.5 slow; it never gilds the partner",
+      "symbol": "ArenaModHooks.MidasEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "m_discombobulate",
+      "target": "PCE.Cards.DiscombobulateCard.GetDoBlockAction (runtime patch)",
+      "kind": "postfix",
+      "does": "Discombobulate's block action also confuses Cuphead enemies (confuse = silence + StConfused) that are within discombobulateRange of the block and in sight, for discombobulateDuration",
+      "symbol": "ArenaModHooks.DiscombobulateEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "m_discombobulate_partner",
+      "target": "PCE.Cards.DiscombobulateCard.OnDiscombobulateActivate (runtime patch)",
+      "kind": "prefix",
+      "does": "co-op: Discombobulate never reverses the partner's controls",
+      "symbol": "ArenaModHooks.NoPartnerDiscombobulate",
+      "effects": "none"
+    },
+    {
+      "id": "m_murder_count",
+      "target": "PCE.Cards.MurderCard.OnAddCard (runtime patch)",
+      "kind": "prefix",
+      "does": "Murder does nothing in the arena: no RPCA_Die on the partner 2 s after the pick and no ModdingUtils murder stack; Cuphead keeps the stacks in the Roundhead save (one per Murder pick) and spends them at the next level",
+      "symbol": "ArenaModHooks.MurderCounts",
+      "effects": "none"
+    },
+    {
+      "id": "m_murder_battle",
+      "target": "PCE.Cards.MurderCard.CommitMurders (runtime patch)",
+      "kind": "prefix",
+      "does": "the BattleStart murder hook does nothing in the arena (it would kill the partner); Cuphead spends Murder itself",
+      "symbol": "ArenaModHooks.NoMurders",
+      "effects": "none"
+    },
+    {
+      "id": "m_laser_tick_start",
+      "target": "PCE.Cards.LaserHurtbox.HurtBox (runtime patch)",
+      "kind": "prefix",
+      "does": "opens a per-tick set of Cuphead enemy groups (CupheadTarget.OncePerGroup): one laser damage tick hits each enemy once, not once per mirrored hit area",
+      "symbol": "ArenaModHooks.LaserTickStart",
+      "effects": "none"
+    },
+    {
+      "id": "m_laser_tick_end",
+      "target": "PCE.Cards.LaserHurtbox.HurtBox (runtime patch)",
+      "kind": "finalizer",
+      "does": "closes the tick's group set (restores an outer one), also when HurtBox throws",
+      "symbol": "ArenaModHooks.LaserTickEnd",
+      "effects": "none"
+    },
+    {
+      "id": "m_laser_path",
+      "target": "PCE.Cards.LaserHurtbox.GetPositions (runtime patch)",
+      "kind": "prefix",
+      "does": "the PCE laser beam passes through Cuphead enemies as it does through ROUNDS players, bounces off Cuphead floors and walls, ends at the level bounds, and bounces at most 16 times (not 1000)",
+      "symbol": "ArenaModHooks.LaserPath",
+      "effects": "none"
+    },
+    {
+      "id": "m_laser_native_toggle",
+      "target": "PCE.Cards.GeneralInputPatchUpdate.Postfix (runtime patch)",
+      "kind": "prefix",
+      "does": "PCE's own switchWeapon laser toggle (it reads the hidden window) is skipped for arena players; Cuphead's switch presses (Slot2 U_SwitchPresses) toggle the laser instead, in ArenaModTicker",
+      "symbol": "ArenaModHooks.NoNativeLaserToggle",
+      "effects": "none"
+    },
+    {
+      "id": "m_super_jump",
+      "target": "PCE.MonoBehaviours.SuperJumpEffect.OnUpdate (runtime patch)",
+      "kind": "transpiler",
+      "does": "Super Jump charges from Cuphead's down key (Slot2 U_DownHeld, or the fed move direction) instead of InControl playerActions.Down",
+      "symbol": "ArenaModHooks.SuperJumpDown",
+      "effects": "none"
+    },
+    {
+      "id": "m_sky_bullets",
+      "target": "PCE.MonoBehaviours.SpawnBulletsEffect.SetPosition (runtime patch)",
+      "kind": "prefix",
+      "does": "Demonic Possession's nuke, rain and wall bullets start over the top of Cuphead's view instead of at world (0,100), just under a Cuphead ceiling when there is one; under a ceiling the nuke is dropped down instead of fired up",
+      "symbol": "ArenaModHooks.SkyOverCuphead",
+      "effects": "none"
+    },
+    {
+      "id": "m_thank_you",
+      "target": "ROUNDS HealthHandler.TakeDamage",
+      "kind": "prefix",
+      "does": "Thank You Sir, May I Have Another?: each Cuphead hit that lands (Arena.CupheadHit) adds the card's max and current ammo, as a ROUNDS bullet hit would (applied only when PCE is installed)",
+      "symbol": "ArenaModHooks.ThankYouCuphead",
+      "effects": "none"
+    },
+    {
+      "id": "h_enemy_wait",
+      "target": "CupheadTime.WaitForSeconds",
+      "kind": "prefix",
+      "does": "per-enemy coroutine time: a wait started by a slowed or stunned enemy runs at Delta x its ROUNDS speed (0 while frozen, 1 - slow while slowed), speeds back up when the status ends, and stops at a hard cap of maxWaitStretch x time + maxWaitExtra; Cuphead's hit-pause (DamageReceiver), HitFlash and Level waits are untouched; costs one counter increment while no enemy shows a status",
+      "symbol": "Hooks.EnemyWait",
+      "effects": "none"
+    },
+    {
+      "id": "h_enemy_wait_layer",
+      "target": "CupheadTime.WaitForSeconds",
+      "kind": "prefix",
+      "does": "the same per-enemy coroutine time for the overload that takes a CupheadTime.Layer",
+      "symbol": "Hooks.EnemyWaitLayer",
+      "effects": "none"
+    },
+    {
+      "id": "h_silenced_shot",
+      "target": "AbstractProjectile.Start",
+      "kind": "postfix",
+      "does": "silence/confuse: a projectile that appears inside (or within silenceSpawnPad of) a silenced enemy's hit area becomes a harmless faded dud: its DamageDealer stops damaging players, it keeps its colliders and is never destroyed, so scripts that wait for it to land keep working; parryable (pink) projectiles stay live; a projectile already made a dud at ObjectPool.Spawn gets the DamageDealer built by Start muted at once, and a dud undoes itself when the projectile is recycled or disabled (its Player flag and sprite colours come back), so every life is decided afresh",
+      "symbol": "Hooks.SilencedShot",
+      "effects": "none"
+    },
+    {
+      "id": "h_silenced_spawn",
+      "target": "ObjectPool.Spawn",
+      "kind": "postfix",
+      "does": "silence/confuse for pooled projectiles: ObjectPool re-activates them with SetActive(true) and never runs Start again, so every activation re-runs the dud test; a parryable one is let go at its first LateUpdate (its spawner sets CanParry after Spawn returns)",
+      "symbol": "Hooks.SilencedSpawn",
+      "effects": "none"
+    },
+    {
+      "id": "dev-status-wait-counter",
+      "target": "CupheadTime.WaitForSeconds (runtime patch)",
+      "kind": "prefix",
+      "does": "Dev only (ROUNDHEAD_DEV=statuses in a Melty test run). Counts the boss's waits that reach CupheadTime.WaitForSeconds, both overloads. This is the inlining check for the per-enemy wait dilation. It is patched only when the status bench starts.",
+      "symbol": "TestMode.CountWait",
+      "effects": "none"
+    },
+    {
+      "id": "dev-status-remerge",
+      "target": "EnemyStatus.EndFrame (runtime patch)",
+      "kind": "postfix",
+      "does": "Dev only (ROUNDHEAD_DEV=statuses). EndFrame drops statuses the ROUNDS table did not refresh, so this re-merges the statuses the Cuphead-side bench is holding right after it. That way the bench's slow and stun survive ArenaClient.ReadStatus in the same frame. It is patched only when the bench starts.",
+      "symbol": "TestMode.ReMerge",
+      "effects": "none"
+    },
+    {
+      "id": "e_view_edge_bounce",
+      "target": "ROUNDS ScreenEdgeBounce.Start",
+      "kind": "postfix",
+      "does": "Bouncy, Riccochet, Mayhem, Trickster, Target Bounce and Super Ball bullets bounce at the Cuphead view's edges (ArenaViewCam), not at ROUNDS's menu camera 1000 units above the arena",
+      "symbol": "ArenaTargetPatches.EdgeOnCupheadView",
+      "effects": "none"
+    },
+    {
+      "id": "e_view_looper",
+      "target": "ROUNDS Looper.Awake",
+      "kind": "postfix",
+      "does": "Looper wraps bullets at the Cuphead view's edges",
+      "symbol": "ArenaTargetPatches.LoopOnCupheadView",
+      "effects": "none"
+    },
+    {
+      "id": "e_view_bounds_point",
+      "target": "ROUNDS OutOfBoundsHandler.GetPoint",
+      "kind": "prefix",
+      "does": "ROUNDS's fixed screen box becomes the Cuphead level view, just inside the level walls, so PCE Pac-Bullets and Pac-Player wrap there",
+      "symbol": "ArenaTargetPatches.BoundsOnCupheadView",
+      "effects": "none"
+    },
+    {
+      "id": "e_view_fireworks",
+      "target": "ROUNDS PCE.MonoBehaviours.FireworkEffect.Start (runtime patch)",
+      "kind": "postfix",
+      "does": "PCE Fireworks pop near the top of the Cuphead view (handed ArenaViewCam instead of MainCam)",
+      "symbol": "ArenaFireworkPatch.FireworkOnCupheadView",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_homing",
+      "target": "ROUNDS Homing.Update",
+      "kind": "prefix",
+      "does": "Homing bullets curve toward the closest visible Cuphead enemy, never toward the shooter or the partner",
+      "symbol": "ArenaTargetPatches.HomeOnEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_bounce",
+      "target": "ROUNDS BounceEffectRetarget.DoBounce",
+      "kind": "prefix",
+      "does": "Target Bounce re-aims at the closest visible Cuphead enemy after a bounce (0.1 s pause, aim line)",
+      "symbol": "ArenaTargetPatches.RetargetEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_radar",
+      "target": "ROUNDS RadarShot.Go",
+      "kind": "prefix",
+      "does": "Radar Shot auto-fires attack-level shots at the closest visible Cuphead enemy in range, never at the partner",
+      "symbol": "ArenaTargetPatches.RadarEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_chase",
+      "target": "ROUNDS Chase.Update",
+      "kind": "prefix",
+      "does": "Chase's +60% speed turns on when moving toward a visible Cuphead enemy, not toward the partner",
+      "symbol": "ArenaTargetPatches.ChaseEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_saw_owner",
+      "target": "ROUNDS Saw.Start",
+      "kind": "prefix",
+      "does": "Saw's owner from the nearest SpawnedAttack, else the player it sits on (Abyssal Countdown's saw: an NRE in plain ROUNDS)",
+      "symbol": "ArenaTargetPatches.SawOwner",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_saw",
+      "target": "ROUNDS Saw.Update",
+      "kind": "prefix",
+      "does": "Saw and Abyssal Countdown saw the closest visible Cuphead enemy (continuous damage plus both pushes); the partner is never shoved",
+      "symbol": "ArenaTargetPatches.SawEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_radiance",
+      "target": "ROUNDS LineRangeEffect.Update",
+      "kind": "prefix",
+      "does": "Radiance rings hit and push the closest visible Cuphead enemy once per ring, never the partner",
+      "symbol": "ArenaTargetPatches.RadianceRing",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_aura",
+      "target": "ROUNDS PlayerInRangeTrigger.Update",
+      "kind": "prefix",
+      "does": "Chilling Presence and Lifestealer auras fire on the closest visible Cuphead enemy in range (ROUNDS: nobody solo, the partner in co-op)",
+      "symbol": "ArenaTargetPatches.AuraOnEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_chill",
+      "target": "ROUNDS PlayerInRangeSlow.Update",
+      "kind": "prefix",
+      "does": "Chilling Presence's additive slow lands on the aura's enemy",
+      "symbol": "ArenaTargetPatches.ChillEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_drain",
+      "target": "ROUNDS DealDamageToPlayer.Go",
+      "kind": "prefix",
+      "does": "Lifestealer's drain hits the aura's enemy (the owner's heal stays native); Demonic Pact's self-cost is untouched",
+      "symbol": "ArenaTargetPatches.DrainEnemy",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_shield_charge",
+      "target": "ROUNDS ShieldCharge.Update",
+      "kind": "postfix",
+      "does": "Shield Charge bumps each Cuphead enemy once per charge: damage, knockback, recoil and the automatic block",
+      "symbol": "ArenaTargetPatches.ChargeIntoEnemies",
+      "effects": "none"
+    },
+    {
+      "id": "e_partner_charge",
+      "target": "ROUNDS ShieldCharge.Collide",
+      "kind": "prefix",
+      "does": "co-op: charging into the partner no longer knocks them back",
+      "symbol": "ArenaTargetPatches.NoPartnerCharge",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_thruster_life",
+      "target": "ROUNDS Thruster.Start",
+      "kind": "postfix",
+      "does": "a thruster stuck to a light Cuphead enemy lasts the full player time (bosses keep ROUNDS's x0.2)",
+      "symbol": "ArenaTargetPatches.ThrusterLife",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_thruster_push",
+      "target": "ROUNDS Thruster.FixedUpdate",
+      "kind": "prefix",
+      "does": "a thruster pushes the Cuphead enemy it sticks to on every physics step (continuous force)",
+      "symbol": "ArenaTargetPatches.ThrusterPush",
+      "effects": "none"
+    },
+    {
+      "id": "e_target_remote",
+      "target": "ROUNDS RemoteControl.Update",
+      "kind": "prefix",
+      "does": "Remote bullets steer toward the Cuphead cursor, or the Cuphead aim, instead of the hidden ROUNDS window's mouse",
+      "symbol": "ArenaTargetPatches.SteerWithCuphead",
+      "effects": "none"
+    },
+    {
+      "id": "e_teleport_from",
+      "target": "ROUNDS Teleport.Go",
+      "kind": "prefix",
+      "does": "remember where a Teleport starts",
+      "symbol": "ArenaTargetPatches.TeleportFrom",
+      "effects": "none"
+    },
+    {
+      "id": "e_teleport_inside",
+      "target": "ROUNDS Teleport.Go",
+      "kind": "postfix",
+      "does": "Teleport never lands outside the level (past Cuphead's bound walls or ceiling); ROUNDS's 10 steps are re-run inside the level view",
+      "symbol": "ArenaTargetPatches.TeleportInside",
+      "effects": "none"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ROUNDS card engine: a BepInEx plugin for the player's own ROUNDS (old-rounds-for-mods branch). -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>CupRounds.CardEngine</AssemblyName>
+    <RootNamespace>CupRounds</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);CARDENGINE</DefineConstants>
+    <NoWarn>CS1591;CS0649;CS0169</NoWarn>
+    <RoundsDir Condition="'$(RoundsDir)' == ''">D:\SteamLibrary\steamapps\common\ROUNDS</RoundsDir>
+    <BepInExCore Condition="'$(BepInExCore)' == '' and '$(CUPROUNDS_WORK)' != ''">$(CUPROUNDS_WORK)\dl\bepinex\BepInEx\core</BepInExCore>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(USERPROFILE)\cuprounds-work\dl\bepinex\BepInEx\core</BepInExCore>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="BepInEx"><HintPath>$(BepInExCore)\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(BepInExCore)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <RoundsManaged Include="$(RoundsDir)\Rounds_Data\Managed\*.dll" Exclude="$(RoundsDir)\Rounds_Data\Managed\mscorlib.dll;$(RoundsDir)\Rounds_Data\Managed\System*.dll;$(RoundsDir)\Rounds_Data\Managed\Mono.*.dll;$(RoundsDir)\Rounds_Data\Managed\netstandard.dll;$(RoundsDir)\Rounds_Data\Managed\Microsoft.*.dll" />
+    <Reference Include="@(RoundsManaged->'%(FullPath)')" Private="false" />
+  </ItemGroup>
+</Project>
