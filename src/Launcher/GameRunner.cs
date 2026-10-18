@@ -119,6 +119,7 @@ namespace CupRounds.Launcher
             Say("Preparing the ROUNDS card engine...");
             SyncProfile();
             bool engineUp = EngineReady();
+            bool ready = engineUp;
             if (!engineUp)
                 try { if (File.Exists(Paths.PortFile)) File.Delete(Paths.PortFile); } catch { }
 
@@ -143,8 +144,11 @@ namespace CupRounds.Launcher
                     if (DateTime.Now > until) { Say("ROUNDS is taking a long time to load its cards"); break; }
                     Thread.Sleep(500);
                 }
+                ready = EngineReady();
             }
-            Say("Roundhead is running. Have fun!");
+            if (CupheadProc.HasExited) Say("Cuphead closed before the ROUNDS card engine was ready.");
+            else if (ready) Say("Roundhead is running. Have fun!");
+            else Say("Cuphead is running; Roundhead's ROUNDS players join as soon as the card engine is ready.");
             // The background ROUNDS stays for the whole Cuphead session: if it stops, it is started again (Cuphead holds the
             // players and picks them up when it is back).
             int restarts = 0;
@@ -178,7 +182,9 @@ namespace CupRounds.Launcher
             try
             {
                 if (p.HasExited) return;
-                // The background ROUNDS has no window and nothing to save; ending it directly skips ROUNDS's
+                // The engine notices within 2 s that Cuphead is gone and ends itself, writing its log first.
+                if (p.WaitForExit(6000)) { Log.Write("The background ROUNDS closed itself (pid " + p.Id + ")"); return; }
+                // Still running: the background ROUNDS has no window and nothing to save; ending it directly skips ROUNDS's
                 // shutdown, where its sound system throws and ROUNDS reports a crash.
                 p.Kill();
                 p.WaitForExit(5000);

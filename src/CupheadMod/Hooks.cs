@@ -26,7 +26,7 @@ namespace CupRounds
         [HarmonyPostfix, HarmonyPatch(typeof(AbstractPlayerController), "OnRevive")]
         public static void StatsRevive(AbstractPlayerController __instance)
         {
-            var c = BlobController.For(__instance);
+            var c = ArenaSeat.For(__instance);
             if (c != null) ArenaClient.OnCupheadRevived(c);
         }
 
@@ -115,7 +115,7 @@ namespace CupRounds
         [HarmonyPostfix, HarmonyPatch(typeof(LevelGameOverGUI.TimelineObjects), "Setup")]
         public static void GameOverIcons(LevelGameOverGUI.TimelineObjects __instance)
         {
-            if (BlobController.All.Count == 0) return;
+            if (ArenaSeat.Seats.Count == 0) return;
             int first = PlayerManager.player1IsMugman ? 1 : 0; // the cuphead icon is player 2's when player 1 is Mugman
             Mark(__instance.cuphead, first);
             Mark(__instance.mugman, 1 - first);
@@ -245,14 +245,17 @@ namespace CupRounds
             Reflect.Set(__instance, "HealthMax", Mathf.Clamp(c.health.Hearts + charmBonus, 1, (int)Tuning.maxHearts));
         }
 
-        /// <summary>A hit inside the block window (or caught by auto block, or in decay grace) does nothing.</summary>
+        /// <summary>A hit inside the block window (or caught by auto block, or in decay grace) does nothing. A plane level's
+        /// player without the arena takes Cuphead's own hit.</summary>
         [HarmonyPrefix, HarmonyPatch(typeof(PlayerStatsManager), "OnDamageTaken")]
         public static bool DamageTaken(PlayerStatsManager __instance, DamageDealer.DamageInfo info)
         {
-            var c = BlobController.For(__instance);
-            if (c == null || info == null || info.damage <= 0f) return true;
+            var seat = ArenaSeat.For(__instance);
+            if (seat == null || info == null || info.damage <= 0f) return true;
             // ROUNDS's player takes the hit (its block, health and death); Cuphead's own health never moves.
-            if (c.Arena) return ArenaClient.OnCupheadDamage(c, info);
+            if (seat.Arena) return ArenaClient.OnCupheadDamage(seat, info);
+            var c = seat as BlobController;
+            if (c == null) return true;
             // Hidden and held at the spawn point until ROUNDS's player arrives: nothing hurts it meanwhile.
             if (ArenaClient.Waiting(c)) return false;
             if (info.damageSource == DamageDealer.DamageSource.Pit) return true;
@@ -309,11 +312,23 @@ namespace CupRounds
             Progress.ClearSlot(slot);
         }
 
-        /// <summary>Plane levels: the player flies as their ROUNDS character (PlaneBlob); the plane controls stay Cuphead's.</summary>
+        /// <summary>Plane levels: the player flies as their ROUNDS player (PlaneBlob); the plane controls stay Cuphead's.</summary>
         [HarmonyPostfix, HarmonyPatch(typeof(PlanePlayerController), "LevelInit")]
         public static void PlaneInit(PlanePlayerController __instance)
         {
             PlaneBlob.Attach(__instance);
+        }
+
+        /// <summary>While ROUNDS's player flies with the plane, the ROUNDS gun is the weapon: the plane's shots, EX, super and
+        /// weapon switch stay off (PlanePlayerWeaponManager.FixedUpdate runs CheckBasic, CheckEx and HandleWeaponSwitch), and
+        /// a shot it was firing when ROUNDS took over ends. Without the arena the plane shoots as Cuphead's.</summary>
+        [HarmonyPrefix, HarmonyPatch(typeof(PlanePlayerWeaponManager), "FixedUpdate")]
+        public static bool PlaneWeapons(PlanePlayerWeaponManager __instance)
+        {
+            var c = ArenaSeat.For(__instance);
+            if (c == null || !c.Arena) return true;
+            if (__instance.IsShooting) Reflect.Call(__instance, "EndBasic");
+            return false;
         }
 
         /// <summary>The results screen after a win shows the players' ROUNDS characters instead of Cuphead and Mugman, and
@@ -334,6 +349,27 @@ namespace CupRounds
         public static void ShopStart()
         {
             ShopPackOverlay.ShopOpened();
+        }
+
+        /// <summary>One save slot: the title's Start goes straight into slot 1 (GameFlow).</summary>
+        [HarmonyPostfix, HarmonyPatch(typeof(SlotSelectScreen), "UpdateMainMenu")]
+        public static void SingleSlot(SlotSelectScreen __instance)
+        {
+            GameFlow.EnterSingleSlot(__instance);
+        }
+
+        /// <summary>Drop-in two-player play: player 2 joins on their first press, without the "join?" prompt (GameFlow).</summary>
+        [HarmonyPrefix, HarmonyPatch(typeof(PlayerManager), "SetPlayerCanJoin")]
+        public static void DropIn(ref bool promptBeforeJoin)
+        {
+            GameFlow.DropIn(ref promptBeforeJoin);
+        }
+
+        /// <summary>No storybook cutscenes: each is swapped for the scene it leads to (GameFlow).</summary>
+        [HarmonyPrefix, HarmonyPatch(typeof(SceneLoader), "LoadScene", new[] { typeof(Scenes), typeof(SceneLoader.Transition), typeof(SceneLoader.Transition), typeof(SceneLoader.Icon), typeof(SceneLoader.Context) })]
+        public static void SkipCutscene(ref Scenes scene)
+        {
+            GameFlow.SkipCutscene(ref scene);
         }
 
         /// <summary>Test runs never write the player's Cuphead save.</summary>

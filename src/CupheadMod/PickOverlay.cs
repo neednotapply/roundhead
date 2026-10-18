@@ -40,13 +40,13 @@ namespace CupRounds
         private bool InShop => ShopScene.Current != null;
 
         /// <summary>The game-over card is up and ready (LevelGameOverGUI.State.Ready) after a lost level ROUNDS's players
-        /// were in (plane levels and the tutorial take no part).</summary>
+        /// were in (the tutorial takes no part).</summary>
         private static bool OnGameOver
         {
             get
             {
                 var gui = LevelGameOverGUI.Current;
-                if (gui == null || !gui.gameObject.activeInHierarchy || Level.Current == null || !Level.Current.Ending || Level.Won || BlobController.All.Count == 0) return false;
+                if (gui == null || !gui.gameObject.activeInHierarchy || Level.Current == null || !Level.Current.Ending || Level.Won || ArenaSeat.Seats.Count == 0) return false;
                 object state = Reflect.Get(gui, "state");
                 return state != null && System.Convert.ToInt32(state) == 1;
             }

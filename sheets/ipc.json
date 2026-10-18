@@ -81,7 +81,7 @@
     },
     {
       "id": "arena",
-      "request": "none (shared memory Local\\CupRoundsArena3, ArenaLink.cs: control written by Cuphead every frame = camera, pause flag, per-player input (press counters), level colliders, events (damage, pit, spawn with a life number), pick requests)",
+      "request": "none (shared memory Local\\CupRoundsArena3, ArenaLink.cs: control written by Cuphead every frame = camera, pause flag, Cuphead's sound-effects volume, per-player input (press counters), level colliders, events (damage, pit, spawn with a life number), pick requests, the plane hold: in a plane level ROUNDS's player is held at the plane's centre with no ROUNDS movement or gravity)",
       "response": "result written by ROUNDS every frame = heartbeat first, players' position, velocity, health, block, dead, cards held and the last life number done (Cuphead ignores a slot until it matches), bullet hits on Cuphead targets, picked cards, plus the rendered ROUNDS layer in three frame buffers",
       "server": "Arena.Update",
       "client": "ArenaClient.Tick"

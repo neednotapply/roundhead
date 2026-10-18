@@ -5,21 +5,19 @@ using UnityEngine;
 namespace CupRounds
 {
     /// <summary>The ROUNDS blob that replaces a Cuphead player on ground levels (sheets/effects.json).</summary>
-    public class BlobController : MonoBehaviour
+    public class BlobController : ArenaSeat
     {
         public static readonly List<BlobController> All = new List<BlobController>();
 
         public LevelPlayerController player;
-        public int index;
         public BuildStats build = new BuildStats();
-        public BlobInput input;
         public BlobMotor motor;
         public BlobBody body;
         public BlobHealth health;
         public BlobBlock block;
         public RoundsGun gun;
 
-        public static BlobController For(AbstractPlayerController p)
+        public static new BlobController For(AbstractPlayerController p)
         {
             if (p == null) return null;
             for (int i = 0; i < All.Count; i++)
@@ -27,7 +25,7 @@ namespace CupRounds
             return null;
         }
 
-        public static BlobController For(Component c)
+        public static new BlobController For(Component c)
         {
             return c == null ? null : For(c.GetComponent<AbstractPlayerController>());
         }
@@ -38,7 +36,7 @@ namespace CupRounds
             var c = p.gameObject.AddComponent<BlobController>();
             c.player = p;
             c.index = p.id == PlayerId.PlayerTwo ? 1 : 0;
-            c.input = new BlobInput(c);
+            c.TakeSeat();
             c.motor = new BlobMotor(c);
             c.health = new BlobHealth(c);
             c.block = new BlobBlock(c);
@@ -77,7 +75,9 @@ namespace CupRounds
         /// the tutorial have no intro and never set Started, Level.cs:1885-1961), not ending, not paused, and Cuphead's own
         /// motor taking input (dialogue and doors switch it off, DialogueInteractionPoint.cs:141; the house keeps the motor on
         /// and only the weapon off, so walking there must not wait on the weapon).</summary>
-        public bool CanAct
+        public override AbstractPlayerController Body => player;
+
+        public override bool CanAct
         {
             get
             {
@@ -88,21 +88,12 @@ namespace CupRounds
             }
         }
 
-        /// <summary>ROUNDS's real player stands in for this one (the arena link is live).</summary>
-        public bool Arena => ArenaClient.Drives(this);
-        private int announcedFor;
-
         private void Update()
         {
             float dt = CupheadTime.Delta;
             input.Update();
             // ROUNDS's player arrived (level start, ROUNDS ready late, or ROUNDS started again): it comes here.
-            int rounds = ArenaClient.RoundsPid;
-            if (ArenaClient.Live && announcedFor != rounds && ArenaClient.link.I(ArenaLink.RSlot(index) + ArenaLink.Q_Present) != 0)
-            {
-                announcedFor = rounds;
-                ArenaClient.OnPlayerSpawned(this);
-            }
+            Announce();
             if (Arena)
             {
                 ArenaClient.Follow(this);
@@ -124,8 +115,9 @@ namespace CupRounds
             body.LateUpdate();
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             All.Remove(this);
             body.Destroy();
         }
@@ -138,7 +130,7 @@ namespace CupRounds
     /// </summary>
     public class BlobInput
     {
-        private readonly BlobController c;
+        private readonly ArenaSeat c;
         private Vector3 lastMouse;
         private float lastMouseTime = -100f;
         private float lastStickTime = -100f;
@@ -148,9 +140,9 @@ namespace CupRounds
         private float jumpPressedAt = -10f;
         private bool botWasHeld;
 
-        public BlobInput(BlobController c) { this.c = c; }
+        public BlobInput(ArenaSeat c) { this.c = c; }
 
-        private Rewired.Player Rp => c.player.input.actions;
+        private Rewired.Player Rp => c.Body.input.actions;
 
         /// <summary>The mouse and the ROUNDS keys belong to player 1.</summary>
         private bool KeyboardPlayer => c.index == 0;
@@ -279,11 +271,14 @@ namespace CupRounds
             return StickAxis(rt) > 0.5f;
         }
 
+        /// <summary>A plane's Dash and Lock buttons (and the left trigger) shrink it, so a flying player blocks with the EX
+        /// button and the right mouse only.</summary>
         public bool BlockDown()
         {
             if (TestMode.BotBlock(c.index)) return true;
-            if (Rp.GetButtonDown(Buttons.Block) || Rp.GetButtonDown(Buttons.BlockAlt)) return true;
+            if (Rp.GetButtonDown(Buttons.BlockAlt) || (!c.Flying && Rp.GetButtonDown(Buttons.Block))) return true;
             if (KeyboardPlayer && Input.GetMouseButtonDown(1)) return true;
+            if (c.Flying) return false;
             bool trig = StickAxis(lt) > 0.5f;
             bool down = trig && !wasLeftTrigger;
             wasLeftTrigger = trig;
@@ -294,7 +289,7 @@ namespace CupRounds
         public Vector2 MouseWorld()
         {
             Camera cam = CupheadLevelCamera.Current != null ? CupheadLevelCamera.Current.camera : Camera.main;
-            if (cam == null) return c.player.center;
+            if (cam == null) return c.Body.center;
             Vector3 vp = new Vector3(Input.mousePosition.x / Mathf.Max(1, Screen.width), Input.mousePosition.y / Mathf.Max(1, Screen.height), 0f);
             Rect r = cam.rect;
             vp.x = (vp.x - r.x) / Mathf.Max(0.01f, r.width);
@@ -303,7 +298,8 @@ namespace CupRounds
             return cam.ViewportToWorldPoint(vp);
         }
 
-        /// <summary>Free 360 aim: test bot, then the mouse (player 1), then the right stick, then the 8-way direction held.</summary>
+        /// <summary>Free 360 aim: test bot, then the mouse (player 1), then the right stick, then the 8-way direction held (a
+        /// plane: forward).</summary>
         public Vector2 Aim(Vector2 origin)
         {
             Vector2 bot;
@@ -315,10 +311,12 @@ namespace CupRounds
             }
             Vector2 s = new Vector2(StickAxis(rx), StickAxis(ry));
             if (s.sqrMagnitude > 0.2f) return s.normalized;
-            int lx = (int)c.player.motor.LookDirection.x;
-            int ly = (int)c.player.motor.LookDirection.y;
-            if (c.player.motor.Grounded && !Locked() && ly < 0) ly = 0;
-            if (lx == 0 && ly == 0) lx = (int)c.player.motor.TrueLookDirection.x;
+            var lp = c.Body as LevelPlayerController;
+            if (lp == null) return c.RestAim;
+            int lx = (int)lp.motor.LookDirection.x;
+            int ly = (int)lp.motor.LookDirection.y;
+            if (lp.motor.Grounded && !Locked() && ly < 0) ly = 0;
+            if (lx == 0 && ly == 0) lx = (int)lp.motor.TrueLookDirection.x;
             if (lx == 0 && ly == 0) lx = 1;
             return new Vector2(lx, ly).normalized;
         }

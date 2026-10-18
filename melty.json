@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "mode": "standalone",
+  "test": {
+    "checks": [
+      "engine-cards",
+      "cards-picked",
+      "blob-spawned",
+      "coop-blobs",
+      "cards-applied",
+      "blob-hits-boss",
+      "enemy-status",
+      "enemy-wait-dilation"
+    ],
+    "minutes": 5
+  },
+  "games": [
+    {
+      "role": "primary",
+      "slug": "custom-cuphead"
+    },
+    {
+      "role": "companion",
+      "slug": "custom-rounds"
+    }
+  ],
+  "notes": {
+    "firstLaunch": "Roundhead opens its launcher: browse Thunderstore card mods if you like, then press Play. Cuphead starts and a hidden ROUNDS runs next to it to play your ROUNDS character; leave ROUNDS closed before you press Play.",
+    "beforeInstall": "ROUNDS must be on its old-rounds-for-mods Steam beta branch (ROUNDS > Properties > Betas), the version Thunderstore card mods support."
+  },
+  "launch": {
+    "args": [
+      "--cuphead",
+      "{game}",
+      "--rounds",
+      "{game:custom-rounds}",
+      "--managed",
+      "{managed}"
+    ],
+    "kind": "exe",
+    "path": "{managed}/CupRoundsLauncher.exe"
+  },
+  "mappings": [
+    {
+      "to": "{managed}",
+      "from": "managed/",
+      "component": "main"
+    },
+    {
+      "to": "{game}",
+      "from": "proxy-cuphead/version.dll",
+      "component": "main"
+    },
+    {
+      "to": "{game:custom-rounds}",
+      "from": "proxy-rounds/version.dll",
+      "component": "main"
+    }
+  ],
+  "components": [
+    {
+      "id": "main",
+      "kind": "main",
+      "label": "Roundhead",
+      "fileName": "Roundhead-*.zip",
+      "required": true
+    }
+  ],
+  "runtimeData": [
+    "{localappdata}/CupRounds"
+  ],
+  "requirements": []
+}

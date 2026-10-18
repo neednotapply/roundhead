@@ -54,8 +54,16 @@
       "id": "h_plane_init",
       "target": "PlanePlayerController.LevelInit",
       "kind": "postfix",
-      "does": "plane levels: the plane's sprites stay off and the player flies as their real ROUNDS character (PlaneBlob: the ROUNDS puppet hovering where the plane is, gun forward, legs dangling behind, following the plane's shrink, blink and visibility, parry-pink while parrying); the plane's controls, hitbox, shots and super stay Cuphead's",
+      "does": "plane levels: the plane's sprites stay off and the player is a Flying ArenaSeat (PlaneBlob): with the arena live, ROUNDS's real player is held at the plane (ArenaLink.U_Fly) and is the player (ROUNDS gun, bullets, block, health, cards; the plane's parry refills the ROUNDS block); without it the plane plays as Cuphead's, drawn as the ROUNDS puppet hovering where the plane is (gun forward, legs dangling behind, following the plane's shrink, blink and visibility, parry-pink while parrying); the plane's controls, hitbox, shrink and parry stay Cuphead's",
       "symbol": "Hooks.PlaneInit",
+      "effects": "none"
+    },
+    {
+      "id": "h_plane_weapons",
+      "target": "PlanePlayerWeaponManager.FixedUpdate",
+      "kind": "prefix",
+      "does": "while ROUNDS's player flies with the plane, the plane's shots, EX, super and weapon switch stay off (the ROUNDS gun is the weapon) and a shot it was firing ends; without the arena the plane shoots as Cuphead's",
+      "symbol": "Hooks.PlaneWeapons",
       "effects": "none"
     },
     {
@@ -832,6 +840,30 @@
       "kind": "postfix",
       "does": "Teleport never lands outside the level (past Cuphead's bound walls or ceiling); ROUNDS's 10 steps are re-run inside the level view",
       "symbol": "ArenaTargetPatches.TeleportInside",
+      "effects": "none"
+    },
+    {
+      "id": "h_single_slot",
+      "target": "SlotSelectScreen.UpdateMainMenu",
+      "kind": "postfix",
+      "does": "one save slot: the title's Start goes straight into slot 1 (EnterGame) with the character the slot was saved with; slots 2 and 3 stay untouched on disk and are never loaded",
+      "symbol": "Hooks.SingleSlot",
+      "effects": "none"
+    },
+    {
+      "id": "h_drop_in",
+      "target": "PlayerManager.SetPlayerCanJoin",
+      "kind": "prefix",
+      "does": "drop-in two-player play: wherever Cuphead lets player 2 join (map, a level under way) they join on their first press, without the interrupting join prompt",
+      "symbol": "Hooks.DropIn",
+      "effects": "none"
+    },
+    {
+      "id": "h_skip_cutscene",
+      "target": "SceneLoader.LoadScene",
+      "kind": "prefix",
+      "does": "no storybook cutscenes: a cutscene load becomes the scene it leads to (Cutscene.Load's stored target; the opening one leads to the world map, the Devil's offer to his fight, King Dice's welcome to his palace with every contract, else back to the map)",
+      "symbol": "Hooks.SkipCutscene",
       "effects": "none"
     }
   ]
