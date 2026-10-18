@@ -75,4 +75,4 @@ You need Windows, the .NET SDK (8 works; the projects target net35, net472 and n
 
 ## Credits and license
 
-Roundhead is MIT licensed. Its package bundles BepInEx 5.4.23.2 (MIT, with HarmonyX, MonoMod and Mono.Cecil, all MIT) and UnityDoorstop 4.3.0 (LGPL-2.1, shipped unmodified as `version.dll`). Neither is in this repository; their licenses go in the package's `third-party-notices` folder. Cuphead is by Studio MDHR; ROUNDS is by Landfall Games. Card mods are by their Thunderstore authors. Made with AI assistance (Claude) for Melty.
+Roundhead is MIT licensed. Its package bundles BepInEx 5.4.23.2 (MIT, with HarmonyX, MonoMod and Mono.Cecil, all MIT) and UnityDoorstop 4.3.0 (LGPL-2.1, shipped unmodified as `version.dll`). Neither is in this repository; their licenses go in the package's `third-party-notices` folder. Cuphead and ROUNDS are not included: Cuphead is by Studio MDHR Entertainment Inc., ROUNDS is by Landfall Games, and the mod needs your own copies of both. Card mods are by their Thunderstore authors. Made with AI assistance (Claude) for Melty.
