@@ -16,7 +16,7 @@ namespace CupRounds
     /// Runs inside ROUNDS while Roundhead plays: waits until ROUNDS (and any card mods) have loaded every card,
     /// then serves card lists, card renders, card math and the player's ROUNDS look to Cuphead over localhost.
     /// </summary>
-    [BepInPlugin("gg.melty.roundhead.cardengine", "Roundhead card engine", "0.1.1")]
+    [BepInPlugin("gg.melty.roundhead.cardengine", "Roundhead card engine", "0.1.2")]
     public class EnginePlugin : BaseUnityPlugin
     {
         public static EnginePlugin I;
@@ -25,6 +25,7 @@ namespace CupRounds
         public static bool Hidden;
         private ArenaLink startingLink;
         private float nextCupheadCheck;
+        private float nextFlush;
 
         /// <summary>Ends the hidden engine when the Cuphead process that uses it is gone (its pid is in the control block).</summary>
         public static void CheckCuphead(ArenaLink link)
@@ -49,7 +50,7 @@ namespace CupRounds
             if (Hidden)
             {
                 SteamQuiet.Apply();
-                AudioListener.volume = 0f;
+                AudioListener.volume = 0f; // until the arena plays at Cuphead's volume (Arena.Sound)
                 Application.targetFrameRate = 60;
                 // Nothing inside the hidden engine may close it while Cuphead plays: the launcher and Exit() end it directly.
                 Application.wantsToQuit += () => { L.LogWarning("arena: ROUNDS asked to quit; ignored while it is Cuphead's card engine"); return false; };
@@ -63,6 +64,17 @@ namespace CupRounds
                 }
             }
             StartCoroutine(WaitForCards());
+            StartCoroutine(LogAudio());
+        }
+
+        /// <summary>Whether Unity's audio runs in this process (its DSP clock moves only with an output device).</summary>
+        private IEnumerator LogAudio()
+        {
+            double dsp0 = AudioSettings.dspTime;
+            yield return new WaitForSecondsRealtime(3f);
+            var cfg = AudioSettings.GetConfiguration();
+            L.LogInfo("audio: dsp clock " + dsp0.ToString("0.00") + " -> " + AudioSettings.dspTime.ToString("0.00") + " s, " + cfg.sampleRate + " Hz, " + cfg.speakerMode
+                + " (driver " + AudioSettings.driverCapabilities + "), listener volume " + AudioListener.volume + ", batchmode " + Application.isBatchMode);
         }
 
         private IEnumerator WaitForCards()
@@ -82,6 +94,7 @@ namespace CupRounds
                 yield return new WaitForSecondsRealtime(0.5f);
             }
             L.LogInfo("ROUNDS cards ready: " + last + " cards");
+            FlushLog();
             if (Environment.GetCommandLineArgs().Any(a => a == "--roundhead-dump")) Diagnostics.DumpPlayer();
             if (Environment.GetCommandLineArgs().Any(a => a == "--roundhead-dumpcards")) CardAudit.Dump();
             server = new EngineServer();
@@ -99,6 +112,13 @@ namespace CupRounds
                 if (Time.unscaledTime > nextCupheadCheck) { nextCupheadCheck = Time.unscaledTime + 2f; CheckCuphead(startingLink); }
             }
             server?.Pump();
+            // The launcher may have to end this process directly; keep the disk log written so a report always shows how far it got.
+            if (Hidden && Time.unscaledTime > nextFlush) { nextFlush = Time.unscaledTime + 5f; FlushLog(); }
+        }
+
+        public static void FlushLog()
+        {
+            try { foreach (var l in BepInEx.Logging.Logger.Listeners) (l as DiskLogListener)?.LogWriter?.Flush(); } catch { }
         }
 
         private void OnApplicationQuit()
@@ -113,7 +133,7 @@ namespace CupRounds
         {
             // The disk log is flushed on a timer, so a line written right before Kill() is lost: flush it and leave a note.
             try { L.LogInfo("engine exiting: " + why); } catch { }
-            try { foreach (var l in BepInEx.Logging.Logger.Listeners) (l as DiskLogListener)?.LogWriter?.Flush(); } catch { }
+            FlushLog();
             try { File.AppendAllText(Path.Combine(Proto.DataDir(), "engine-exit.log"), DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + why + Environment.NewLine); } catch { }
             try { Arena.I?.link?.I(ArenaLink.ResultOff + ArenaLink.R_State, ArenaLink.StateOff); } catch { }
             try { I?.server?.Stop(); } catch { }

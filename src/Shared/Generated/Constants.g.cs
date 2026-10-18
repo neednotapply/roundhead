@@ -166,7 +166,7 @@ namespace CupRounds
         public const int LossPicks = 1;
         public const int LossOffer = 5;
         public const int LossCost = 0;
-        /// <summary>a level ROUNDS's players are in is won (boss, run-and-gun, mausoleum, King Dice himself): both decks are wiped; a Dice Palace mini boss keeps them, plane levels and the tutorial take no part</summary>
+        /// <summary>a level ROUNDS's players are in is won (boss, run-and-gun, mausoleum, plane level, King Dice himself): both decks are wiped; a Dice Palace mini boss keeps them, the tutorial takes no part</summary>
         public const int LevelWonPicks = 0;
         public const int LevelWonOffer = 0;
         public const int LevelWonCost = 0;
@@ -180,13 +180,13 @@ namespace CupRounds
     {
         /// <summary>Cuphead's motor walks; speed comes from the build</summary>
         public const int Move = 0;
-        /// <summary>in the air: extra jump if the build has one, against a wall: wall jump</summary>
+        /// <summary>in the air: extra jump if the build has one, against a wall: wall jump; in a plane level it is the plane's parry (Space too)</summary>
         public const int Jump = 2;
         /// <summary>free 360 aim; with no mouse or stick input it falls back to the 8-way direction held</summary>
         public const int Aim = 1;
         /// <summary>auto fire while held unless a card makes it semi-auto</summary>
         public const int Shoot = 3;
-        /// <summary>Cuphead's Dash button blocks (the blob has no dash); EX button also blocks</summary>
+        /// <summary>Cuphead's Dash button blocks (the blob has no dash); EX button also blocks; in a plane level Dash and Lock (and the left trigger) shrink the plane, so the EX button and right mouse block there</summary>
         public const int Block = 7;
         /// <summary>EX/Super button also blocks, since the blob has no EX or super</summary>
         public const int BlockAlt = 4;

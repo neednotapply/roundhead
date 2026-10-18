@@ -11,7 +11,8 @@ namespace CupRounds
     /// it reads back where ROUNDS's players are, their health and block, hits on Cuphead enemies, the effect ring and
     /// status table that <see cref="EnemyStatus"/> shows on the enemies, and ROUNDS's picture.
     /// While it is live, the Cuphead player objects only follow ROUNDS's players (Cuphead still uses them for enemy
-    /// aim, hits, the camera and co-op).
+    /// aim, hits, the camera and co-op). Plane levels go the other way: Cuphead flies the plane and ROUNDS's player is held
+    /// at it (ArenaLink.U_Fly), so only the gun, block, health and cards are ROUNDS's.
     /// </summary>
     public static class ArenaClient
     {
@@ -102,10 +103,10 @@ namespace CupRounds
         }
 
         /// <summary>ROUNDS has done this player's latest spawn: its result slot describes the current life.</summary>
-        public static bool Synced(BlobController c) => link != null && link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Life) == life[c.index];
+        public static bool Synced(ArenaSeat c) => link != null && link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Life) == life[c.index];
 
         /// <summary>Where ROUNDS's player body is this frame (Cuphead units), for drawings that hang off it (the drop shadow).</summary>
-        public static bool RoundsBody(BlobController c, out Vector2 centre, out float radius)
+        public static bool RoundsBody(ArenaSeat c, out Vector2 centre, out float radius)
         {
             centre = Vector2.zero;
             radius = 0f;
@@ -117,14 +118,14 @@ namespace CupRounds
         }
 
         /// <summary>This Cuphead player is driven by ROUNDS right now.</summary>
-        public static bool Drives(BlobController c)
+        public static bool Drives(ArenaSeat c)
         {
             return c != null && Mode == 1 && Live && link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Present) != 0;
         }
 
         public static bool Picking => pickSlot >= 0;
 
-        private static bool InLevel => Level.Current != null && BlobController.All.Count > 0;
+        private static bool InLevel => Level.Current != null && ArenaSeat.Seats.Count > 0;
 
         // ------------------------------------------------------------------ every frame
 
@@ -155,6 +156,7 @@ namespace CupRounds
             link.I(ArenaLink.C_Magic, ArenaLink.Magic);
             link.Inc(ArenaLink.C_Beat);
             link.F(ArenaLink.C_Scale, Tuning.moveWorldScale);
+            link.F(ArenaLink.C_Volume, SfxGain());
             Mode = Picking ? 2 : InLevel ? 1 : 0;
             // The level is over (won, lost, left): the decks as they stand reach ROUNDS now, never during a KO outro. A won
             // level wiped them, so its players go back to the plain gun before the next level; Cuphead's Level object can
@@ -206,12 +208,12 @@ namespace CupRounds
             {
                 nextLog = Time.unscaledTime + 3f;
                 var sb = new System.Text.StringBuilder("arena: live=" + Live + " cols=" + cols.Count + " targets=" + targets.Count);
-                foreach (var c in BlobController.All)
+                foreach (var c in ArenaSeat.Seats)
                 {
-                    if (c == null) continue;
+                    if (c == null || c.Body == null) continue;
                     int q = ArenaLink.RSlot(c.index);
-                    sb.Append(" | p" + (c.index + 1) + " rounds=(" + link.F(q + ArenaLink.Q_X).ToString("0") + "," + link.F(q + ArenaLink.Q_Y).ToString("0") + ") hp=" + link.F(q + ArenaLink.Q_Hp).ToString("0")
-                        + " dead=" + link.I(q + ArenaLink.Q_Dead) + " cup=(" + c.player.center.x.ToString("0") + "," + c.player.center.y.ToString("0") + ") cupDead=" + c.player.IsDead);
+                    sb.Append(" | p" + (c.index + 1) + (c.Flying ? " flying" : "") + " rounds=(" + link.F(q + ArenaLink.Q_X).ToString("0") + "," + link.F(q + ArenaLink.Q_Y).ToString("0") + ") hp=" + link.F(q + ArenaLink.Q_Hp).ToString("0")
+                        + " dead=" + link.I(q + ArenaLink.Q_Dead) + " cup=(" + c.Body.center.x.ToString("0") + "," + c.Body.center.y.ToString("0") + ") cupDead=" + c.Body.IsDead);
                 }
                 Plugin.L.LogInfo(sb.ToString());
             }
@@ -219,6 +221,18 @@ namespace CupRounds
 
         private static float nextLog;
         private static int lastMode;
+
+        /// <summary>Cuphead's sound-effects gain: its master and SFX option volumes are decibels on its mixer
+        /// (AudioManager.masterVolume, sfxOptionsVolume), -80 for off.</summary>
+        private static float SfxGain()
+        {
+            try
+            {
+                float db = AudioManager.masterVolume + AudioManager.sfxOptionsVolume;
+                return db <= -79f ? 0f : Mathf.Clamp01(Mathf.Pow(10f, db / 20f));
+            }
+            catch { return 1f; }
+        }
 
         private static void FrameSize()
         {
@@ -235,8 +249,7 @@ namespace CupRounds
         private static void WriteInput(int slot)
         {
             int s = ArenaLink.Slot(slot);
-            BlobController c = null;
-            foreach (var b in BlobController.All) if (b != null && b.index == slot) c = b;
+            ArenaSeat c = ArenaSeat.InSlot(slot);
             bool present = c != null || (Picking && slot == pickSlot) || (Mode == 0 && slot == 0);
             link.I(s + ArenaLink.S_Present, present ? 1 : 0);
             if (c != null && Mode == 1)
@@ -246,11 +259,13 @@ namespace CupRounds
                 Vector2 move = act ? input.Move() : Vector2.zero;
                 link.F(s + ArenaLink.S_MoveX, move.x);
                 link.F(s + ArenaLink.S_MoveY, move.y);
-                Vector2 aim = input.Aim(c.player.center);
+                Vector2 aim = input.Aim(c.Body.center);
                 link.F(s + ArenaLink.S_AimX, aim.x);
                 link.F(s + ArenaLink.S_AimY, aim.y);
-                if (act && input.JumpDown()) link.I(s + ArenaLink.S_JumpPresses, ++jumpPresses[slot]);
-                link.I(s + ArenaLink.S_JumpHeld, act && input.JumpHeld() ? 1 : 0);
+                // A plane's jump button is its parry, and the plane does the flying.
+                bool jumps = act && !c.Flying;
+                if (jumps && input.JumpDown()) link.I(s + ArenaLink.S_JumpPresses, ++jumpPresses[slot]);
+                link.I(s + ArenaLink.S_JumpHeld, jumps && input.JumpHeld() ? 1 : 0);
                 bool shoot = act && input.ShootHeld();
                 if (act && input.ShootDown()) link.I(s + ArenaLink.S_ShootPresses, ++shootPresses[slot]);
                 link.I(s + ArenaLink.S_ShootHeld, shoot ? 1 : 0);
@@ -290,6 +305,7 @@ namespace CupRounds
                 int x = ArenaLink.Slot2(slot);
                 link.I(x + ArenaLink.U_CursorOn, 0);
                 link.I(x + ArenaLink.U_DownHeld, 0);
+                link.I(x + ArenaLink.U_Fly, 0);
             }
         }
 
@@ -300,12 +316,17 @@ namespace CupRounds
         /// LevelPlayerWeaponManager.HandleWeaponSwitch, which runs in FixedUpdate (LevelPlayerWeaponManager.cs:348-353)
         /// and would miss or double a press.
         /// </summary>
-        private static void WriteSlot2(int slot, BlobController c, Vector2 aim, Vector2 move, bool act)
+        private static void WriteSlot2(int slot, ArenaSeat c, Vector2 aim, Vector2 move, bool act)
         {
             int x = ArenaLink.Slot2(slot);
             var input = c.input;
+            // A plane level's ROUNDS player is held at the plane's centre (it stays there while the plane is dead, so a
+            // revive brings it back where the ghost was parried).
+            link.F(x + ArenaLink.U_FlyX, c.Body.center.x);
+            link.F(x + ArenaLink.U_FlyY, c.Body.center.y);
+            link.I(x + ArenaLink.U_Fly, c.Flying ? 1 : 0);
             bool mouse = input.MouseActive;
-            Vector2 cursor = mouse ? input.MouseWorld() : (Vector2)c.player.center + aim * Tuning.cursorAimReach;
+            Vector2 cursor = mouse ? input.MouseWorld() : (Vector2)c.Body.center + aim * Tuning.cursorAimReach;
             link.F(x + ArenaLink.U_CursorX, cursor.x);
             link.F(x + ArenaLink.U_CursorY, cursor.y);
             link.I(x + ArenaLink.U_CursorOn, mouse ? 1 : 0);
@@ -314,7 +335,7 @@ namespace CupRounds
             bool sw = false;
             try
             {
-                var rp = c.player.input != null ? c.player.input.actions : null;
+                var rp = c.Body.input != null ? c.Body.input.actions : null;
                 sw = rp != null && rp.GetButtonDown(SwitchWeaponButton);
             }
             catch { }
@@ -331,14 +352,7 @@ namespace CupRounds
         public static void Follow(BlobController c)
         {
             int q = ArenaLink.RSlot(c.index);
-            if (!Synced(c))
-            {
-                // ROUNDS has not revived and moved its player for this life yet: what it reports is from before (old place,
-                // old death). The Cuphead player holds still; the spawn is sent again in case ROUNDS's player did not exist yet.
-                seenBlocks[c.index] = link.I(q + ArenaLink.Q_Blocks);
-                if (Time.unscaledTime - spawnSentAt[c.index] > 0.5f) SendSpawn(c);
-                return;
-            }
+            if (!InLife(c)) return;
             Vector2 centre = new Vector2(link.F(q + ArenaLink.Q_X), link.F(q + ArenaLink.Q_Y));
             Vector3 offset = (Vector3)c.player.center - c.player.transform.position;
             bool dead = link.I(q + ArenaLink.Q_Dead) != 0;
@@ -347,11 +361,7 @@ namespace CupRounds
                 c.player.transform.position = new Vector3(centre.x - offset.x, centre.y - offset.y, c.player.transform.position.z);
                 CheckPit(c, centre);
             }
-            // ROUNDS's player died: Cuphead's player dies too (ghost in co-op, game over alone).
-            if (dead && !c.player.IsDead) OnRoundsDeath(c);
-            int held = link.I(q + ArenaLink.Q_Cards), owned = Progress.Owned(c.index).Length;
-            if (owned > 0 && held >= owned)
-                TestMode.Report("cards-applied", true, "ROUNDS's player " + (c.index + 1) + " holds " + held + " cards, applied by ROUNDS itself (ApplyCardStats): " + string.Join(", ", Progress.Owned(c.index)));
+            Track(c);
             // The ROUNDS block parries pink things the Cuphead way.
             int blocks = link.I(q + ArenaLink.Q_Blocks);
             if (blocks != seenBlocks[c.index])
@@ -361,14 +371,43 @@ namespace CupRounds
             }
         }
 
-        public static bool Blocking(BlobController c) => link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Blocking) != 0;
+        /// <summary>Called from PlaneBlob.Update in a plane level: ROUNDS's player is held at the plane (WriteSlot2), so only
+        /// its life, death and cards are followed here. The plane parries with its own button (no ROUNDS-block parry).</summary>
+        public static void Lead(ArenaSeat c)
+        {
+            if (!InLife(c)) return;
+            Track(c);
+            TestMode.Report("plane-arena", true, "player " + (c.index + 1) + "'s ROUNDS player flies with the plane: ROUNDS gun, block, health and cards in a plane level");
+        }
+
+        /// <summary>ROUNDS has done this player's latest spawn. Until then what it reports is from before (old place, old
+        /// death): the Cuphead player holds still and the spawn is sent again in case ROUNDS's player did not exist yet.</summary>
+        private static bool InLife(ArenaSeat c)
+        {
+            if (Synced(c)) return true;
+            seenBlocks[c.index] = link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Blocks);
+            if (Time.unscaledTime - spawnSentAt[c.index] > 0.5f) SendSpawn(c);
+            return false;
+        }
+
+        /// <summary>ROUNDS's player died: Cuphead's player dies too (ghost in co-op, game over alone). And the deck check.</summary>
+        private static void Track(ArenaSeat c)
+        {
+            int q = ArenaLink.RSlot(c.index);
+            if (link.I(q + ArenaLink.Q_Dead) != 0 && !c.Body.IsDead) OnRoundsDeath(c);
+            int held = link.I(q + ArenaLink.Q_Cards), owned = Progress.Owned(c.index).Length;
+            if (owned > 0 && held >= owned)
+                TestMode.Report("cards-applied", true, "ROUNDS's player " + (c.index + 1) + " holds " + held + " cards, applied by ROUNDS itself (ApplyCardStats): " + string.Join(", ", Progress.Owned(c.index)));
+        }
+
+        public static bool Blocking(ArenaSeat c) => link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Blocking) != 0;
 
         /// <summary>
         /// ROUNDS's player died in this life. Cuphead's player only dies while the level is being played: during the intro a
         /// run-and-gun level has no timeline yet (its game over card would break), and once the level is ending a death means
         /// nothing, so ROUNDS's player is brought back instead.
         /// </summary>
-        private static void OnRoundsDeath(BlobController c)
+        private static void OnRoundsDeath(ArenaSeat c)
         {
             Level lv = Level.Current;
             if (lv != null && lv.Started && !lv.Ending) KillCuphead(c);
@@ -377,35 +416,36 @@ namespace CupRounds
 
         /// <summary>Cuphead's own last hit (PlayerStatsManager.TakeDamage at one heart): its invincibility and level-end rules,
         /// then the death event (ghost in co-op, game over alone). Tried again next frame while Cuphead refuses.</summary>
-        private static void KillCuphead(BlobController c)
+        private static void KillCuphead(ArenaSeat c)
         {
-            var st = c.player.stats;
+            var st = c.Body.stats;
             st.SetHealth(1);
             Reflect.Call(st, "TakeDamage");
-            if (c.player.IsDead || st.Health <= 0) Plugin.L.LogInfo("arena: ROUNDS player " + (c.index + 1) + " died");
+            if (c.Body.IsDead || st.Health <= 0) Plugin.L.LogInfo("arena: ROUNDS player " + (c.index + 1) + " died");
         }
 
         /// <summary>A new Cuphead life for this player: ROUNDS revives its player at Cuphead's spot, and nothing ROUNDS reports
         /// for the slot counts until it echoes the life number back.</summary>
-        private static void Spawn(BlobController c)
+        private static void Spawn(ArenaSeat c)
         {
             life[c.index]++;
             SendSpawn(c);
         }
 
-        private static void SendSpawn(BlobController c)
+        private static void SendSpawn(ArenaSeat c)
         {
             spawnSentAt[c.index] = Time.unscaledTime;
-            link.PostEvent(ArenaLink.EvSpawn, c.index, c.player.center.x, c.player.center.y, life: life[c.index]);
+            link.PostEvent(ArenaLink.EvSpawn, c.index, c.Body.center.x, c.Body.center.y, life: life[c.index]);
         }
 
         /// <summary>A parry landed (LevelPlayerMotor.OnParrySuccess, after the hit-stop): ROUNDS refills the block and bounces
         /// its player, the reward Cuphead gives for a parry. Cuphead's own bounce is lost on a ROUNDS-driven player, whose
-        /// place comes from ROUNDS.</summary>
-        public static void OnParrySuccess(BlobController c)
+        /// place comes from ROUNDS. A plane's parry (PlanePlayerParryController.OnParrySuccessEvent) only refills the block:
+        /// the plane does the flying.</summary>
+        public static void OnParrySuccess(ArenaSeat c)
         {
-            if (link == null || !Drives(c) || !Synced(c) || c.player.IsDead) return;
-            link.PostEvent(ArenaLink.EvParry, c.index, Tuning.parryBounce);
+            if (link == null || !Drives(c) || !Synced(c) || c.Body.IsDead) return;
+            link.PostEvent(ArenaLink.EvParry, c.index, c.Flying ? 0f : Tuning.parryBounce);
             TestMode.Report("parry-reward", true, "player " + (c.index + 1) + " parried: ROUNDS block refilled and bounce sent");
         }
 
@@ -431,21 +471,21 @@ namespace CupRounds
         }
 
         /// <summary>A new level (or a retry): ROUNDS's player comes back to full health at Cuphead's spawn point.</summary>
-        public static void OnPlayerSpawned(BlobController c)
+        public static void OnPlayerSpawned(ArenaSeat c)
         {
             if (link == null) return;
             Spawn(c);
             SyncCards(c.index);
         }
 
-        public static void OnCupheadRevived(BlobController c)
+        public static void OnCupheadRevived(ArenaSeat c)
         {
             if (link == null) return;
             Spawn(c);
         }
 
         /// <summary>Damage Cuphead dealt to its player goes to ROUNDS's health instead. Returns false to cancel Cuphead's own damage.</summary>
-        public static bool OnCupheadDamage(BlobController c, DamageDealer.DamageInfo info)
+        public static bool OnCupheadDamage(ArenaSeat c, DamageDealer.DamageInfo info)
         {
             if (info.damageSource == DamageDealer.DamageSource.Pit)
             {
@@ -459,7 +499,7 @@ namespace CupRounds
                 if (!TestMode.Immune && Time.time - blockedHitAt[c.index] >= Tuning.blockedHitCooldown)
                 {
                     blockedHitAt[c.index] = Time.time;
-                    Vector2 bd = (Vector2)c.player.center - info.origin;
+                    Vector2 bd = (Vector2)c.Body.center - info.origin;
                     if (info.origin == Vector2.zero || bd.sqrMagnitude < 1f) bd = Vector2.up;
                     link.PostEvent(ArenaLink.EvBlockedHit, c.index, Tuning.healthPerHeart, bd.x, bd.y);
                 }
@@ -467,7 +507,7 @@ namespace CupRounds
             }
             if (TestMode.Immune || Time.time < hitUntil[c.index]) return false;
             hitUntil[c.index] = Time.time + Tuning.arenaHitCooldown;
-            Vector2 dir = (Vector2)c.player.center - info.origin;
+            Vector2 dir = (Vector2)c.Body.center - info.origin;
             if (info.origin == Vector2.zero || dir.sqrMagnitude < 1f) dir = Vector2.up;
             link.PostEvent(ArenaLink.EvDamage, c.index, Tuning.healthPerHeart, dir.x, dir.y, Tuning.hitKnockback);
             return false;

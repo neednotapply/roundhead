@@ -11,7 +11,7 @@
   },
   "rows": [
     {"id": "loss", "when": "a game over on a level ROUNDS's players are in (every player dead, or a Mausoleum urn lost): each player picks on the game-over card, before Retry or Exit to Map", "picks": 1, "offerSize": 5, "cost": 0, "symbol": "Progress.OnLevelLost"},
-    {"id": "level_won", "when": "a level ROUNDS's players are in is won (boss, run-and-gun, mausoleum, King Dice himself): both decks are wiped; a Dice Palace mini boss keeps them, plane levels and the tutorial take no part", "picks": 0, "offerSize": 0, "cost": 0, "symbol": "Progress.OnLevelWon"},
+    {"id": "level_won", "when": "a level ROUNDS's players are in is won (boss, run-and-gun, mausoleum, plane level, King Dice himself): both decks are wiped; a Dice Palace mini boss keeps them, the tutorial takes no part", "picks": 0, "offerSize": 0, "cost": 0, "symbol": "Progress.OnLevelWon"},
     {"id": "shop_pack", "when": "buying a card pack at Porkrind's Emporium: one card into the current deck, a head start on the next attempt (wiped at the win like the rest)", "picks": 1, "offerSize": 5, "cost": 2, "symbol": "ShopPackOverlay.Buy"}
   ]
 }

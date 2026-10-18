@@ -44,8 +44,19 @@
   (LevelPlayerMotor.OnParrySuccess, after the hit-stop) posts EvParry: ROUNDS refills the block (Block.ResetCD, its own
   recharge sound and spark) and bounces the player with its own jump (PlayerJump.Jump, tuning parryBounce), which does not
   spend a jump. Cuphead's own parry bounce is lost on a ROUNDS-driven player, whose place comes from ROUNDS.
-- Plane levels keep Cuphead's plane controls, hitbox, shots and super; the player is drawn as the real ROUNDS character
-  flying (src/CupheadMod/PlaneBlob.cs): the plane's sprites stay off and the ROUNDS puppet hovers on the plane sprite with
+- Plane levels keep Cuphead's plane controls, hitbox, shrink and parry, and ROUNDS's real player is the player the other way
+  round from the ground: Cuphead writes the plane's centre and U_Fly into each slot's Slot2 block, and the engine holds the
+  ROUNDS player there (Arena.HoldFlyers, in Update and FixedUpdate before ROUNDS's own scripts) with PlayerVelocity.isKinematic
+  on, so ROUNDS's gravity, movement, jumps, recoil, knockback and block dashes do nothing while its gun, bullets, block, health
+  and cards work as on the ground. Ground and plane players are both ArenaSeats (src/CupheadMod/ArenaSeat.cs: BlobController,
+  PlaneBlob); ArenaClient.Follow moves a ground player to ROUNDS, ArenaClient.Lead only follows a plane player's life, death and
+  deck. The plane's shots, EX, super and weapon switch stay off while ROUNDS drives (Hooks.PlaneWeapons on
+  PlanePlayerWeaponManager.FixedUpdate). Controls: Dash and Lock shrink the plane (PlanePlayerAnimationController), so a flying
+  player blocks with the EX button and right mouse (BlobInput.BlockDown); Jump is the plane's parry, so no ROUNDS jumps are sent
+  and Space stays Cuphead's jump (InputPatches.InLevelArena); aim is the mouse or right stick, else forward. A plane parry that
+  lands (PlanePlayerParryController.OnParrySuccessEvent) refills the ROUNDS block with no bounce (EvParry with 0).
+  Without the arena (ROUNDS starting or away) the plane plays as Cuphead's, drawn as the ROUNDS puppet hovering on the plane
+  sprite (src/CupheadMod/PlaneBlob.cs) with
   Request.fly, gun forward and legs dangling behind (ROUNDS puts an airborne foot at rest + body velocity x 0.08, so the
   puppet is posed with a backward, downward velocity: tuning flyLegTrail, flyLegDrop), sized by flySize. It follows the plane's shrink move,
   alpha (invincibility blink) and visibility (supers), turns parry-pink while parrying, and dies as the ROUNDS ghost.
@@ -65,12 +76,17 @@
   menu while PickOverlay.HoldsGameOver); the deck is saved per slot and re-applied to ROUNDS's players (ArenaClient.SyncCards),
   so it survives Retry, Exit to Map and quitting; a won level (Level.zHack_OnWin) wipes both decks and resends them empty, which
   ROUNDS answers with its own FullReset (Arena.ResetCards: plain gun, empty card bar). Dice Palace mini bosses keep the deck,
-  King Dice himself wipes; plane levels and the tutorial have no ROUNDS players, so neither pick nor wipe. Porkrind's pack puts
+  King Dice himself wipes; plane levels take part like any other level; the tutorial has no ROUNDS players, so neither pick nor wipe. Porkrind's pack puts
   one card into the current deck. Saves from the first-clear rules (SlotSave.rules < 2) start over empty; erasing a Cuphead slot
   erases its decks. A pick Cuphead gives up (ROUNDS away, or its player for the slot missing: PickOverlay falls back to its own
   card screen) is cancelled on ROUNDS's side too (a pick request for 0 cards, Arena.CheckPick), so no stale pick comes up over
   a level; a pick that yields nothing is retried once, then falls back, then the card's menu goes on. ROUNDS parks its players
   while a pick runs; for a pick in the middle of a level (the game-over card) they come back to where they stood.
+- Logs: the hidden engine flushes its BepInEx disk log every 5 s and once its cards are ready, and when Cuphead closes the launcher
+  gives it 6 s to end itself (it checks Cuphead's pid every 2 s and flushes on Exit) before killing it, so a player's report always
+  carries the engine's lines. The "Fallback handler could not load library .../data-<address>.dll" lines at the top of ROUNDS's
+  Player.log are Unity's own (Mono naming in-memory assemblies) and appear without any mod. 0.1.0's engine also signed into Steam and
+  ROUNDS printed a Steam session ticket into Player.log; SteamQuiet (0.1.1) keeps the hidden ROUNDS off Steam, so that line is gone.
 - Exit: ROUNDS's Unity teardown throws in its sound system and reports a crash, so the launcher kills the background ROUNDS and
   the engine kills itself when Cuphead's process is gone; Cuphead closes its sockets and the shared memory on quit.
 
@@ -104,6 +120,22 @@
 - Movement uses ROUNDS physics read from the prefab (force 17000, extraDrag 200, airControl 0.8, upForce 5500, gravityForce 1000, exponent 1.5),
   scaled 37 Cuphead units per ROUNDS unit.
 - The ROUNDS engine runs with -batchmode (no window) and starts after Cuphead, so Melty records Cuphead's window; test runs start Cuphead windowed.
+- Sound: Unity's audio still runs in a batch-mode player (EnginePlugin.LogAudio logs the DSP clock moving and the output), so ROUNDS's
+  sounds play from the hidden ROUNDS itself. Arena.Sound sets AudioListener.volume to Cuphead's sound-effects gain (C_Volume, from
+  AudioManager.masterVolume + sfxOptionsVolume in dB), 0 on the map and menus (mode 0, where only the puppets move), pauses with
+  Cuphead (AudioListener.pause), and keeps ROUNDS's music and ambience off (SoundVolumeManager.SetAudioMixerVolumes(1, 0, 1) every
+  second, ROUNDS's own defaults for master and effects).
+
+## Campaign flow (src/CupheadMod/GameFlow.cs)
+- One save slot: the title's Start goes straight into slot 1 (SlotSelectScreen.EnterGame) with the character the slot was saved
+  with; slots 2 and 3 stay on disk and are never loaded, and there is no erase from inside Roundhead.
+- Drop-in: PlayerManager.SetPlayerCanJoin always gets promptBeforeJoin false, so player 2 joins on their first press wherever
+  Cuphead allows joining (map, a level under way) instead of the interrupting prompt; the mid-level join is the ROUNDS player
+  popping in (PlayerJoinEffect stays off).
+- No storybook cutscenes: SceneLoader.LoadScene swaps a scene_cutscene_* for its destination (Cutscene.Load's stored target;
+  the opening one goes to the world map instead of Elder Kettle's house, whose tutorial stays on the map; the Devil's offer to
+  his fight, as refusing does; King Dice's welcome to his palace with every contract, else back to the map). Test runs never
+  pass the title or a cutscene.
 
 ## Test mode
 While `%LOCALAPPDATA%\Melty\test\roundhead.json` exists the launcher auto-plays and the Cuphead plugin: loads save data, switches on 2-player mode, visits the map
@@ -123,8 +155,8 @@ since they could neither dodge nor block. ROUNDHEAD_DEV_DUMP logs how ROUNDS dra
   that point of the title load. The plugin logs a heartbeat every 15 s in test runs (scene, engine link, arena, window) so
   a recording with no checks still says where it stood.
 
-## Known limits (v0.1.1)
-- Plane levels have no ROUNDS cards: the plane's shots and super are Cuphead's (no picks, no wipe), only the look is ROUNDS's.
+## Known limits (v0.1.2)
+- In plane levels the ROUNDS player is held at the plane: cards that move the player (jumps, recoil, knockback, block dashes) do nothing there, and the ROUNDS picture of the player trails the plane by a frame or two.
 - The title screen is Cuphead's own art (Cuphead and Mugman).
 - Co-op is Cuphead's local 2-player; there is no online play.
 

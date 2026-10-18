@@ -24,7 +24,7 @@
       "keyboardExtra": "W / Space (Cuphead's jump key also works)",
       "gamepadExtra": "A",
       "symbol": "BlobInput.JumpDown",
-      "notes": "in the air: extra jump if the build has one, against a wall: wall jump"
+      "notes": "in the air: extra jump if the build has one, against a wall: wall jump; in a plane level it is the plane's parry (Space too)"
     },
     {
       "id": "aim",
@@ -48,7 +48,7 @@
       "keyboardExtra": "right mouse",
       "gamepadExtra": "left trigger / B",
       "symbol": "BlobInput.BlockDown",
-      "notes": "Cuphead's Dash button blocks (the blob has no dash); EX button also blocks"
+      "notes": "Cuphead's Dash button blocks (the blob has no dash); EX button also blocks; in a plane level Dash and Lock (and the left trigger) shrink the plane, so the EX button and right mouse block there"
     },
     {
       "id": "block_alt",

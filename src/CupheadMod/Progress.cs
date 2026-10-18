@@ -152,11 +152,11 @@ namespace CupRounds
             return cap <= 0 || Owned(player).Length + Pending(player) < cap;
         }
 
-        /// <summary>The levels the loop plays on: ROUNDS's players are in it (plane levels are Cuphead's plane), and it is a
-        /// level, not the tutorial or the Tower of Power gauntlet.</summary>
+        /// <summary>The levels the loop plays on: ROUNDS's players are in it (ground levels and plane levels alike), and it is
+        /// a level, not the tutorial or the Tower of Power gauntlet.</summary>
         private static bool TakesPart(Level level)
         {
-            return level != null && !Level.IsTowerOfPower && level.LevelType != Level.Type.Tutorial && BlobController.All.Count > 0;
+            return level != null && !Level.IsTowerOfPower && level.LevelType != Level.Type.Tutorial && ArenaSeat.Seats.Count > 0;
         }
 
         /// <summary>A lost level (every player dead, or a Mausoleum urn lost): each player's loss pick, made on the game-over

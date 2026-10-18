@@ -104,7 +104,8 @@ namespace CupRounds
             else if (__0 == MoveV || __0 == MenuV) __result = Input.GetKey(KeyCode.S);
         }
 
-        /// <summary>In levels the ROUNDS player reads Space itself; Cuphead's own jump stays out of it.</summary>
-        private static bool InLevelArena => ArenaClient.Mode == 1;
+        /// <summary>In ground levels the ROUNDS player reads Space itself; Cuphead's own jump stays out of it. A plane's jump is
+        /// its parry, so Space stays Cuphead's jump there.</summary>
+        private static bool InLevelArena => ArenaClient.Mode == 1 && !ArenaSeat.AnyFlying;
     }
 }

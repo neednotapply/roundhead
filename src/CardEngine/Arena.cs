@@ -64,6 +64,9 @@ namespace CupRounds
         private static readonly AccessTools.FieldRef<PlayerVelocity, Vector2> VelRef = AccessTools.FieldRefAccess<PlayerVelocity, Vector2>("velocity");
         private static readonly AccessTools.FieldRef<PlayerVelocity, bool> SimRef = AccessTools.FieldRefAccess<PlayerVelocity, bool>("simulated");
         private static readonly AccessTools.FieldRef<PlayerVelocity, float> MassRef = AccessTools.FieldRefAccess<PlayerVelocity, float>("mass");
+        private static readonly AccessTools.FieldRef<PlayerVelocity, bool> KinematicRef = AccessTools.FieldRefAccess<PlayerVelocity, bool>("isKinematic");
+        /// <summary>Per slot: held at Cuphead's plane this frame (<see cref="HoldFlyers"/>).</summary>
+        private readonly bool[] flying = new bool[2];
 
         private class Mirror
         {
@@ -169,10 +172,32 @@ namespace CupRounds
                 Step("status", () => { float dt = TimeHandler.deltaTime; foreach (var st in status.Values) st.Tick(dt); });
                 Step("cards", ApplyWantedCards);
                 Step("park", ParkOrPlay);
+                Step("fly", HoldFlyers);
                 Step("pick", CheckPick);
                 Step("log", LogState);
             }
             Step("result", WriteResult);
+            Step("sound", () => Sound(cupheadAlive));
+        }
+
+        private float nextMusicMute;
+
+        /// <summary>
+        /// ROUNDS's own sounds (shots, hits, blocks, deaths, card effects, the pick screen) play from this hidden ROUNDS,
+        /// whose Unity audio runs in batch mode, at Cuphead's sound-effects volume (C_Volume). They are silent where ROUNDS
+        /// has nothing on screen (Cuphead's map and menus, mode 0, where only the puppets move) and pause with Cuphead
+        /// (pause menu, parry hit-stop). ROUNDS's music and ambience stay off (its mixer's music group at -80 dB,
+        /// SoundVolumeManager.SetAudioMixerVolumes: master and effects full, music none), so only Cuphead's music plays.
+        /// </summary>
+        private void Sound(bool cupheadAlive)
+        {
+            float v = cupheadAlive && mode != 0 ? Mathf.Clamp01(link.F(ArenaLink.C_Volume)) : 0f;
+            if ((v > 0f) != (AudioListener.volume > 0f)) EnginePlugin.L.LogInfo("arena: ROUNDS sound " + (v > 0f ? "on at " + v.ToString("0.00") : "off") + " (mode " + mode + ")");
+            if (Mathf.Abs(AudioListener.volume - v) > 0.001f) AudioListener.volume = v;
+            if (AudioListener.pause != paused) AudioListener.pause = paused;
+            if (Time.unscaledTime < nextMusicMute || SoundImplementation.SoundVolumeManager.Instance == null) return;
+            nextMusicMute = Time.unscaledTime + 1f;
+            SoundImplementation.SoundVolumeManager.Instance.SetAudioMixerVolumes(1f, 0f, 1f);
         }
 
         private void SpawnPlayers()
@@ -206,7 +231,7 @@ namespace CupRounds
             levelSeen = -1;
             picking = false;
             pickSlot = -1;
-            for (int i = 0; i < 2; i++) { players[i] = null; creating[i] = false; if (lastCards[i] != null) wantedCards[i] = lastCards[i]; }
+            for (int i = 0; i < 2; i++) { players[i] = null; creating[i] = false; flying[i] = false; if (lastCards[i] != null) wantedCards[i] = lastCards[i]; }
         }
 
         private void LateUpdate()
@@ -218,6 +243,7 @@ namespace CupRounds
         private void FixedUpdate()
         {
             if (phase != Phase.Ready) return;
+            Step("fly", HoldFlyers);
             // Cuphead's floors let you jump up through them: each player's copy of a floor is solid only while the player's body
             // (its centre) is above the copy's surface under it (slopes and rotated ground: the surface at the player's x, not the
             // shape's top). Not the feet: ROUNDS's collision pushes out softly (PlayerCollision.cs:100-106), so a hard landing sinks
@@ -445,6 +471,40 @@ namespace CupRounds
                     Teleport(i, ToCuphead(parkedFrom[i].Value));
                     parkedFrom[i] = null;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Plane levels (ArenaLink.U_Fly): Cuphead flies the plane and ROUNDS's player is held at its centre, before ROUNDS's
+        /// own scripts run in Update and FixedUpdate (this component runs first). PlayerVelocity.isKinematic zeroes the
+        /// velocity each step and skips ROUNDS's gravity and movement (PlayerVelocity.FixedUpdate), so jumps, recoil, knockback
+        /// and block dashes do nothing; the gun, bullets, block, health and every card effect on enemies are ROUNDS's as on
+        /// the ground. A dead player is held too, so a revive brings it back at the plane.
+        /// </summary>
+        private void HoldFlyers()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                var p = players[i];
+                if (p == null || creating[i]) continue;
+                int x = ArenaLink.Slot2(i);
+                bool fly = mode == 1 && link.I(x + ArenaLink.U_Fly) != 0 && p.data.isPlaying;
+                if (fly)
+                {
+                    if (!flying[i]) EnginePlugin.L.LogInfo("arena: player " + (i + 1) + " is held at Cuphead's plane");
+                    KinematicRef(p.data.playerVel) = true;
+                    VelRef(p.data.playerVel) = Vector2.zero;
+                    Vector2 r = ToRounds(link.F(x + ArenaLink.U_FlyX), link.F(x + ArenaLink.U_FlyY));
+                    p.transform.position = new Vector3(r.x, r.y, 0f);
+                    p.data.sinceGrounded = 0f;
+                    lastFeet[i] = float.NegativeInfinity;
+                }
+                else if (flying[i])
+                {
+                    KinematicRef(p.data.playerVel) = false;
+                    EnginePlugin.L.LogInfo("arena: player " + (i + 1) + " is no longer held at a plane");
+                }
+                flying[i] = fly;
             }
         }
 
@@ -1197,7 +1257,7 @@ namespace CupRounds
                 nextLog = Time.unscaledTime + 3f;
                 var sb = new System.Text.StringBuilder("arena: mirrors " + mirrors.Count + " (" + string.Join(",", mirrors.Values.GroupBy(m => m.kind).Select(g => g.Key + ":" + g.Count()).ToArray()) + ")");
                 for (int i = 0; i < 2; i++)
-                    if (players[i] != null) sb.Append(" | p" + (i + 1) + " at " + players[i].transform.position.ToString("0.0") + " active " + players[i].gameObject.activeSelf + " dead " + players[i].data.dead + " hp " + players[i].data.health.ToString("0") + " grounded " + players[i].data.isGrounded);
+                    if (players[i] != null) sb.Append(" | p" + (i + 1) + (flying[i] ? " flying" : "") + " at " + players[i].transform.position.ToString("0.0") + " active " + players[i].gameObject.activeSelf + " dead " + players[i].data.dead + " hp " + players[i].data.health.ToString("0") + " grounded " + players[i].data.isGrounded);
                 EnginePlugin.L.LogInfo(sb.ToString() + (paused ? " (paused)" : ""));
             }
         }

@@ -34,6 +34,8 @@ namespace CupRounds
             S_ShootHeld = 28, S_BlockPresses = 32, S_AcceptPresses = 36, S_MouseX = 40, S_MouseY = 44, S_NavPresses = 48, S_NavDir = 52, S_ShootPresses = 56;
         // pick request
         public const int P_Serial = 0, P_Slot = 4, P_Count = 8;
+        /// <summary>Cuphead's sound-effects gain (its master and SFX volume settings, linear 0..1): ROUNDS's sounds play at it.</summary>
+        public const int C_Volume = 2400;
         // collider entry
         public const int K_Id = 0, K_Kind = 4, K_Shape = 8, K_Points = 12, K_Data = 16; // 32 floats from K_Data
         /// <summary>Collider entry: which Cuphead enemy (DamageReceiver) owns it, and its flags.</summary>
@@ -44,8 +46,11 @@ namespace CupRounds
         // events
         public const int E_Serial = 0, E_Type = 4, E_Slot = 8, E_A = 12, E_B = 16, E_C = 20, E_D = 24, E_Life = 28;
         public const int EvDamage = 1, EvRevive = 2, EvTeleport = 3, EvKill = 4, EvPit = 5, EvPark = 6, EvSpawn = 7, EvBlockedHit = 8, EvParry = 9;
-        /// <summary>Extra per-player input block (cursor in Cuphead world units, keys that only some cards use).</summary>
-        public const int C_Slot2 = 2560, Slot2Size = 32, U_CursorX = 0, U_CursorY = 4, U_CursorOn = 8, U_DownHeld = 12, U_SwitchPresses = 16;
+        /// <summary>Extra per-player input block (cursor in Cuphead world units, keys that only some cards use), and the plane
+        /// hold: U_Fly 1 in a plane level, where ROUNDS's player is held at U_FlyX/U_FlyY (Cuphead units) with no ROUNDS
+        /// movement or gravity.</summary>
+        public const int C_Slot2 = 2560, Slot2Size = 32, U_CursorX = 0, U_CursorY = 4, U_CursorOn = 8, U_DownHeld = 12, U_SwitchPresses = 16,
+            U_Fly = 20, U_FlyX = 24, U_FlyY = 28;
 
         // result (ROUNDS -> Cuphead)
         public const int R_Magic = 0, R_Beat = 4, R_Pid = 8, R_State = 12, R_FrameSerial = 16, R_Ready = 20, R_FrameCamX = 24, R_FrameCamY = 28,

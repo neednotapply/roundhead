@@ -14,10 +14,12 @@ Play Cuphead's whole campaign as your ROUNDS blob.
 - **Cuphead's world.** Cuphead's levels, bosses, attacks, story, world map and shop stay Cuphead's. A Cuphead hit takes ROUNDS health (a third of a fresh player's 100), the ROUNDS block stops hits and parries pink things (a parry that lands refills the block and bounces you up, as in Cuphead), and falling off the bottom bounces you back up with a hit, ROUNDS style. You never see Cuphead or Mugman: dying is ROUNDS's burst, and with two players a see-through ROUNDS ghost floats up in a pink ring for your partner to parry.
 - **ROUNDS's loop: the loser picks.** Every level is a match. You start it with the plain ROUNDS gun; every time it beats you, each player picks a card on the game-over card (1 of 5, ROUNDS's rules), and the deck comes back with you on Retry or from the map. Beat the level and the deck is gone: the next one starts plain again. King Dice's board is one match (mini bosses keep the deck; King Dice himself wipes). Porkrind sells a card pack for 2 coins: one card into your deck now, a head start on the next attempt.
 - **Thunderstore card mods.** The Roundhead launcher browses ROUNDS mods on Thunderstore (card mods first), installs them with their dependencies into Roundhead's own ROUNDS profile, turns them on and off, updates them, and can copy an r2modman / Thunderstore Mod Manager profile or a profile code. Their cards show up in your picks.
-- **Two players on one PC.** Cuphead's local two-player mode works: both players are ROUNDS players (orange and blue) with their own cards, sharing one screen. There is no online play.
-- In plane levels you fly as your ROUNDS character, legs dangling, but with Cuphead's plane shots and controls (no picks, no wipe).
+- **Two players on one PC, drop in any time.** Player 2 joins the moment they press a button on their controller, on the map or in a level, with no prompt pausing the game: both players are ROUNDS players (orange and blue) with their own cards, sharing one screen. There is no online play.
+- **Straight into the game.** One save slot: Start on the title goes right into it. No storybook cutscenes: a new game starts on the world map, and the Devil's offer, King Dice's welcome, the world intros and the ending go straight to what follows them.
+- **ROUNDS sounds.** Shots, hits, blocks, deaths, card effects and the pick screen sound like ROUNDS, at Cuphead's sound-effects volume; the music stays Cuphead's.
+- **Plane levels too.** You fly Cuphead's plane (its movement, shrink and parry) as your real ROUNDS player: the ROUNDS gun, bullets, block, health and cards replace the plane's shots and super, and the loop is the same (pick on a loss, wiped on a win). A parry that lands refills the block.
 
-Requires your own Cuphead and ROUNDS (the mod-compatible "old-rounds-for-mods" branch Thunderstore supports), both on Steam. Cards are saved per Cuphead save slot in `%LOCALAPPDATA%\CupRounds\saves`; Cuphead's own saves are not changed.
+Requires your own Cuphead and ROUNDS (the mod-compatible "old-rounds-for-mods" branch Thunderstore supports), both on Steam. Roundhead plays Cuphead's save slot 1 (slots 2 and 3 are left as they are); its cards are saved beside it in `%LOCALAPPDATA%\CupRounds\saves`, never inside Cuphead's save.
 
 ## Controls
 
@@ -31,6 +33,7 @@ Player 1 has ROUNDS's keyboard and mouse layout; gamepads work for both players.
 | Aim | mouse (crosshair) | right stick |
 | Shoot | left mouse (ROUNDS guns fire per click unless cards make them fast) | right trigger or Shoot |
 | Block / parry | right mouse, Cuphead's Dash or EX | left trigger, Dash or EX |
+| In plane levels | WASD fly, Space parries, Dash or Lock shrinks, right mouse or EX blocks | as in Cuphead; EX blocks |
 | Card pick | A / D or the mouse, Space or click to take | left / right, Jump |
 | World map and menus | WASD, Space | as in Cuphead |
 | Card pack (shop) | P | Lock |
@@ -68,8 +71,9 @@ You need Windows, the .NET SDK (8 works; the projects target net35, net472 and n
 
    This decompiled code is for checking on your machine only. Never commit it.
 5. The design sheets in `sheets/` are the source of truth, and `src/Shared/Generated` is made from them. Run `python -I tools/sheets.py gen` after editing a sheet, and `python -I tools/sheets.py preflight --code` before every build. It must print `clean`.
-6. `python -I tools/package.py 0.1.1` runs the preflight, builds all three projects and writes `dist/Roundhead-0.1.1.zip`, the package Melty installs.
-7. To play the staged build without Melty, copy `dist/stage/proxy-cuphead/version.dll` into your Cuphead folder and `dist/stage/proxy-rounds/version.dll` into your ROUNDS folder, then start `dist/stage/managed/CupRoundsLauncher.exe`. Remove the two `version.dll` files afterwards. `devtools/devloader.sh` does the copying for the dev install.
+6. `python -I tools/package.py 0.1.2` runs the preflight, builds all three projects and writes `dist/Roundhead-0.1.2.zip`, the package Melty installs.
+7. To release it, attach that zip to a GitHub release tagged with the version (`v0.1.2`). `melty.json` at the repository root is the Melty install recipe; it names the package `Roundhead-*.zip`, so Melty takes the tested zip from each release instead of building from source, which needs your own games.
+8. To play the staged build without Melty, copy `dist/stage/proxy-cuphead/version.dll` into your Cuphead folder and `dist/stage/proxy-rounds/version.dll` into your ROUNDS folder, then start `dist/stage/managed/CupRoundsLauncher.exe`. Remove the two `version.dll` files afterwards. `devtools/devloader.sh` does the copying for the dev install.
 
 `NOTES.md` holds the design and testing notes. [devtools](devtools/README.md) has the scripts that run the mod on the real games with test bots and that filmed the listing media.
 
