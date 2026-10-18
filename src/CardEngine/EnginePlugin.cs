@@ -48,6 +48,7 @@ namespace CupRounds
             Application.runInBackground = true;
             if (Hidden)
             {
+                SteamQuiet.Apply();
                 AudioListener.volume = 0f;
                 Application.targetFrameRate = 60;
                 // Nothing inside the hidden engine may close it while Cuphead plays: the launcher and Exit() end it directly.

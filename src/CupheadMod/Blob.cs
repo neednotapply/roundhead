@@ -544,7 +544,11 @@ namespace CupRounds
         public BlobBlock(BlobController c)
         {
             this.c = c;
-            c.player.motor.OnParrySuccess += () => cooldownLeft = 0f;
+            c.player.motor.OnParrySuccess += () =>
+            {
+                cooldownLeft = 0f;
+                ArenaClient.OnParrySuccess(c);
+            };
         }
 
         public bool IsBlocking => windowLeft > 0f;

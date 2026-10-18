@@ -134,6 +134,20 @@ namespace CupRounds
         public const float cursorAimReach = 400.0f;
         /// <summary>blockedHitCooldown (s): A Cuphead hit taken during the ROUNDS block reaches ROUNDS as EvBlockedHit at most this often (contact damage repeats every frame)</summary>
         public const float blockedHitCooldown = 0.1f;
+        /// <summary>parryBounce (x ROUNDS jump): A parry that lands bounces the ROUNDS player with ROUNDS's own jump at this strength (Cuphead's parry bounce), and refills its block</summary>
+        public const float parryBounce = 1.0f;
+        /// <summary>flyHover (rounds units): In plane levels the ROUNDS character is drawn flying: it hovers this high above the puppet's floor so its legs never touch it</summary>
+        public const float flyHover = 3.0f;
+        /// <summary>flyLegTrail (rounds units/s): Backward body speed the flying character's legs are posed with (ROUNDS puts an airborne foot at rest + velocity x 0.08), so they dangle behind it</summary>
+        public const float flyLegTrail = 9.0f;
+        /// <summary>flyLegDrop (rounds units/s): Downward body speed the flying character's legs are posed with, so they hang a little below it</summary>
+        public const float flyLegDrop = 4.0f;
+        /// <summary>flySize (cuphead units): Body width of the flying ROUNDS character in plane levels, a little smaller than the plane it replaces (the plane sprite's frames are mostly padding, so its bounds cannot size it)</summary>
+        public const float flySize = 62.0f;
+        /// <summary>flyShrunk (x flySize): The flying ROUNDS character shrinks to this while the plane is shrunk (Cuphead's shrink move)</summary>
+        public const float flyShrunk = 0.5f;
+        /// <summary>resultsSize (x portrait height): Size of the ROUNDS body on the results screen against the Cuphead or Mugman portrait it replaces</summary>
+        public const float resultsSize = 0.3f;
         /// <summary>murderSettle (s): Saved Murder stacks are spent this long (Cuphead game time) after an arena level has started, once some enemy can take statuses, so they never land in the intro</summary>
         public const float murderSettle = 4.0f;
         /// <summary>colliderEvictSeconds (s): A Cuphead collider that has been off (inactive, disabled or a dead target) this long leaves the collider table and ROUNDS drops its mirror; it is written again the frame it comes back</summary>
