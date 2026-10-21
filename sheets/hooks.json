@@ -467,6 +467,14 @@
       "effects": "none"
     },
     {
+      "id": "e_face_colours",
+      "target": "ROUNDS CharacterCreatorItemEquipper.Equip",
+      "kind": "postfix",
+      "does": "a face's parts (the arena's players, the pick screen's face) are drawn with Unity's plain sprite material in their own colours: ROUNDS's soft-shadow material (SFUnshadowed) needs ROUNDS's light pass, which our frames have none of, and turns them near-black",
+      "symbol": "FaceLookPatches.Equipped",
+      "effects": "none"
+    },
+    {
       "id": "e_overpower_guard",
       "target": "ROUNDS Explosion_Overpower.HitPlayer",
       "kind": "prefix",

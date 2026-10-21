@@ -700,7 +700,7 @@ namespace CupRounds
         }
 
         /// <summary>The ROUNDS face (its skin's parts, else two eyes) as sprites under 'face', added to faceR.</summary>
-        public static void BuildFace(Transform face, SkinData skin, Color shade, List<SpriteRenderer> faceR)
+        public static void BuildFace(Transform face, SkinData skin, List<SpriteRenderer> faceR)
         {
             int before = faceR.Count;
             if (skin != null && skin.faceParts != null)
@@ -724,8 +724,8 @@ namespace CupRounds
                     go.transform.localScale = new Vector3(part.w * fit, part.h * fit * tex.width / Mathf.Max(1f, tex.height), 1f);
                     var r = go.AddComponent<SpriteRenderer>();
                     r.sprite = sp;
-                    // ROUNDS draws face features dark on the blob; white sprites take the blob's dark tone.
-                    r.color = (tint.r + tint.g + tint.b) > 2.7f ? new Color(shade.r * 0.35f, shade.g * 0.35f, shade.b * 0.35f, 1f) : tint;
+                    // The card engine draws the face in ROUNDS's own colours (dark features, coloured hats and details).
+                    r.color = tint;
                     r.sortingOrder = order++;
                     faceR.Add(r);
                 }
@@ -744,7 +744,7 @@ namespace CupRounds
             foreach (var f in feet) f.color = shade;
             foreach (var r in faceR) Object.Destroy(r.gameObject);
             faceR.Clear();
-            BuildFace(face, skin, shade, faceR);
+            BuildFace(face, skin, faceR);
             Texture2D gt = skin != null ? Gfx.FromPng(skin.gun.png) : null;
             Sprite gs = Gfx.ToSprite(gt);
             if (gs != null && skin.gun.w > 0.01f)

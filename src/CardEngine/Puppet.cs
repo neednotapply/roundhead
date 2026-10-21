@@ -14,6 +14,8 @@ namespace CupRounds
     /// The real ROUNDS player character, spawned from ROUNDS's own player prefab far away from the menu and animated by
     /// ROUNDS's own scripts (particle skin, face, IK legs and arms, gun sway, block orb). Gameplay scripts are switched
     /// off; the pose comes from the blob in Cuphead. Each frame it is rendered with its own camera and streamed to Cuphead.
+    /// The launcher's face pictures (Faces.DrawSheet) pose one too, standing still and aiming right, and picture it with
+    /// other faces and single face parts (EquipFace, EquipPart, SavePng).
     /// </summary>
     public class Puppet
     {
@@ -168,6 +170,7 @@ namespace CupRounds
                 var handler = CharacterCreatorHandler.instance ?? Resources.FindObjectsOfTypeAll<CharacterCreatorHandler>().FirstOrDefault();
                 PlayerFace face = handler != null && handler.selectedPlayerFaces != null && slot < handler.selectedPlayerFaces.Length ? handler.selectedPlayerFaces[slot] : null;
                 if (eq != null && face != null) eq.EquipFace(face);
+                FaceLook.Apply(eq);
             }
             catch (Exception e) { EnginePlugin.L.LogWarning("puppet dress: " + e.Message); }
         }
@@ -180,11 +183,7 @@ namespace CupRounds
             if (Time.realtimeSinceStartup > layerRefresh)
             {
                 layerRefresh = Time.realtimeSinceStartup + 1f;
-                // Objects ROUNDS spawns or unparents at runtime (skin particles, legs, gun) join the puppet layer.
-                foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
-                foreach (var u in UnityEngine.Object.FindObjectsOfType<Unparent>())
-                    if (u.parent == root.transform) foreach (var c in u.GetComponentsInChildren<Transform>(true)) c.gameObject.layer = Layer;
-                if (holding != null && holding.holdable != null) foreach (var c in holding.holdable.GetComponentsInChildren<Transform>(true)) c.gameObject.layer = Layer;
+                Relayer();
             }
             Request p = pose;
             // Flying stays in place (the plane moves on Cuphead's side) high above the puppet's floor, and the body velocity
@@ -219,6 +218,15 @@ namespace CupRounds
             if (p.block) Play("Block");
             if (p.hit) root.GetComponentInChildren<PlayerSkinHandler>(true)?.BlinkColor(Color.white * 0.95f);
             pose.shoot = pose.block = pose.hit = false;
+        }
+
+        /// <summary>Objects ROUNDS spawns or unparents at runtime (skin particles, legs, gun, face parts) join the puppet layer.</summary>
+        public void Relayer()
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
+            foreach (var u in UnityEngine.Object.FindObjectsOfType<Unparent>())
+                if (u.parent == root.transform) foreach (var c in u.GetComponentsInChildren<Transform>(true)) c.gameObject.layer = Layer;
+            if (holding != null && holding.holdable != null) foreach (var c in holding.holdable.GetComponentsInChildren<Transform>(true)) c.gameObject.layer = Layer;
         }
 
         /// <summary>ROUNDS's Holding spring (same force and drag), done by hand: the gun trails the hand and points along the aim.</summary>
@@ -257,6 +265,111 @@ namespace CupRounds
             read.Apply(false);
             RenderTexture.active = prev;
             return read.GetRawTextureData();
+        }
+
+        public Vector3 Center => root.transform.position;
+        public float Scale => scale;
+        private CharacterCreatorItemEquipper Equipper => root.GetComponentInChildren<CharacterCreatorItemEquipper>(true);
+        /// <summary>Where ROUNDS puts the face's parts (an item at offset o sits at (item.offset + o) x ScaleM in it).</summary>
+        public Transform FaceParent => Equipper != null && Equipper.itemParent != null ? Equipper.itemParent.transform : root.transform;
+        public float FaceScaleM => Equipper != null ? Equipper.scaleM : 1f;
+
+        public void ShowGun(bool on)
+        {
+            if (holding != null && holding.holdable != null && holding.holdable.gameObject.activeSelf != on) holding.holdable.gameObject.SetActive(on);
+        }
+
+        public void ClearFace()
+        {
+            var eq = Equipper;
+            if (eq == null || eq.itemParent == null) return;
+            for (int i = eq.itemParent.transform.childCount - 1; i >= 0; i--) UnityEngine.Object.DestroyImmediate(eq.itemParent.transform.GetChild(i).gameObject);
+        }
+
+        /// <summary>Another of ROUNDS's faces (it shows from the next frame on, once it is on the puppet's layer).</summary>
+        public void EquipFace(PlayerFace face)
+        {
+            var eq = Equipper;
+            if (eq == null || face == null) return;
+            // ROUNDS's Equip skips a part the face has none of (no detail) and would leave the last face's there.
+            ClearFace();
+            eq.EquipFace(face);
+            FaceLook.Apply(eq);
+            Relayer();
+        }
+
+        /// <summary>One face part alone, at its own place (offset 0), on a layer of its own for the part pictures.</summary>
+        public void EquipPart(CharacterItem item, CharacterItemType type, int layer)
+        {
+            ClearFace();
+            var eq = Equipper;
+            if (eq == null || item == null) return;
+            eq.Equip(item, type, Vector2.zero, 0);
+            FaceLook.Apply(eq);
+            foreach (var t in eq.itemParent.GetComponentsInChildren<Transform>(true)) if (t != eq.itemParent.transform) t.gameObject.layer = layer;
+        }
+
+        /// <summary>A square picture of the puppet (or of one layer) around a point, as a PNG in straight alpha.</summary>
+        public void SavePng(string file, Vector3 center, float units, int size, int layer = Layer)
+        {
+            var go = new GameObject("Roundhead face picture camera");
+            var shot = go.AddComponent<Camera>();
+            var target = new RenderTexture(size, size, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            try
+            {
+                shot.enabled = false;
+                shot.orthographic = true;
+                shot.orthographicSize = units / 2f;
+                shot.aspect = 1f;
+                shot.clearFlags = CameraClearFlags.SolidColor;
+                shot.backgroundColor = new Color(0f, 0f, 0f, 0f);
+                shot.cullingMask = 1 << layer;
+                shot.nearClipPlane = 0.01f;
+                shot.farClipPlane = 200f;
+                shot.transform.position = new Vector3(center.x, center.y, -50f);
+                shot.targetTexture = target;
+                shot.Render();
+                var prev = RenderTexture.active;
+                RenderTexture.active = target;
+                tex.ReadPixels(new Rect(0, 0, size, size), 0, 0, false);
+                RenderTexture.active = prev;
+                // The render target holds premultiplied colour; a PNG wants it straight.
+                var px = tex.GetPixels32();
+                for (int k = 0; k < px.Length; k++)
+                {
+                    var q = px[k];
+                    if (q.a == 0 || q.a == 255) continue;
+                    px[k] = new Color32((byte)Math.Min(255, q.r * 255 / q.a), (byte)Math.Min(255, q.g * 255 / q.a), (byte)Math.Min(255, q.b * 255 / q.a), q.a);
+                }
+                tex.SetPixels32(px);
+                tex.Apply(false);
+                Directory.CreateDirectory(Path.GetDirectoryName(file));
+                File.WriteAllBytes(file + ".tmp", tex.EncodeToPNG());
+                if (File.Exists(file)) File.Delete(file);
+                File.Move(file + ".tmp", file);
+            }
+            finally
+            {
+                shot.targetTexture = null;
+                target.Release();
+                UnityEngine.Object.Destroy(target);
+                UnityEngine.Object.Destroy(tex);
+                UnityEngine.Object.Destroy(go);
+            }
+        }
+
+        public void Destroy()
+        {
+            Ok = false;
+            if (holding != null && holding.holdable != null) UnityEngine.Object.Destroy(holding.holdable.gameObject);
+            foreach (var u in UnityEngine.Object.FindObjectsOfType<Unparent>())
+                if (u != null && root != null && u.parent == root.transform) UnityEngine.Object.Destroy(u.gameObject);
+            if (root != null) UnityEngine.Object.Destroy(root);
+            if (ground != null) UnityEngine.Object.Destroy(ground);
+            if (cam != null) { cam.targetTexture = null; UnityEngine.Object.Destroy(cam.gameObject); }
+            if (rt != null) { rt.Release(); UnityEngine.Object.Destroy(rt); }
+            if (read != null) UnityEngine.Object.Destroy(read);
         }
     }
 

@@ -175,7 +175,7 @@ namespace CupRounds
             fill = Make("fill", col);
             face = new GameObject("face").transform;
             face.SetParent(holder, false);
-            BlobBody.BuildFace(face, skin, shade, all);
+            BlobBody.BuildFace(face, skin, all);
             foreach (var r in all) baseColors.Add(r.color);
             LateUpdate();
         }

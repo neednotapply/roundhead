@@ -1,6 +1,6 @@
 {
   "sheet": "ipc",
-  "about": "Messages between Cuphead (client) and the ROUNDS card engine (server) over a localhost TCP socket, one JSON object per line. The engine writes its port to %LOCALAPPDATA%/CupRounds/engine.port once ROUNDS has loaded every card. Nothing from ROUNDS is written to disk; images travel as base64 PNG in memory.",
+  "about": "Messages between Cuphead (client) and the ROUNDS card engine (server) over a localhost TCP socket, one JSON object per line. The engine writes its port to %LOCALAPPDATA%/CupRounds/engine.port once ROUNDS has loaded every card. Nothing from ROUNDS is written to disk here; images travel as base64 PNG in memory (the launcher's face pictures, content face_parts, come from a separate hidden ROUNDS run).",
   "columns": {
     "id": "message op",
     "request": "fields Cuphead sends (besides op)",

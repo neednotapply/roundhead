@@ -19,4 +19,8 @@
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The face file format the card engine reads too. -->
+    <Compile Include="..\Shared\FaceFile.cs" />
+  </ItemGroup>
 </Project>

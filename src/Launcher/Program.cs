@@ -44,6 +44,8 @@ namespace CupRounds.Launcher
         public static bool AutoPlay;
         /// <summary>--install Owner-Name (repeatable): install Thunderstore mods without the window, then exit.</summary>
         public static readonly System.Collections.Generic.List<string> Installs = new System.Collections.Generic.List<string>();
+        /// <summary>--draw-faces: draw the face pictures and parts (Faces) without the window, then exit.</summary>
+        public static bool DrawFaces;
 
         [STAThread]
         public static int Main(string[] args)
@@ -58,6 +60,7 @@ namespace CupRounds.Launcher
                 else if (a == "--managed") { Paths.Managed = next.TrimEnd('\\', '/'); i++; }
                 else if (a == "--autoplay") AutoPlay = true;
                 else if (a == "--install") { Installs.Add(next); i++; }
+                else if (a == "--draw-faces") DrawFaces = true;
             }
             if (File.Exists(Paths.MeltyTestFile) || Environment.GetEnvironmentVariable("MELTY_TEST") == "1") AutoPlay = true;
             // Started by hand (no folders given): find the games in the Steam libraries.
@@ -73,6 +76,7 @@ namespace CupRounds.Launcher
                 Log.Write("Installed: " + string.Join(", ", ProfileManager.Mods.Select(x => x.FullName + " " + x.Version).ToArray()));
                 return 0;
             }
+            if (DrawFaces) return Faces.Draw() ? 0 : 1;
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             var form = new MainForm();
