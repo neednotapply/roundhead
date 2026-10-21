@@ -124,14 +124,15 @@ namespace CupRounds
     }
 
     /// <summary>
-    /// Builds the player's saved ROUNDS face the way ROUNDS's CharacterCreatorItemEquipper does (same items, offsets
-    /// and scales) and renders it with its own camera to a transparent square one blob across.
+    /// Builds the player's ROUNDS face the way ROUNDS's CharacterCreatorItemEquipper does (same items, offsets, scales and
+    /// drawing order) and renders it with its own camera to a transparent square one blob across, in the parts' own colours
+    /// (FaceLook's plain sprite material: ROUNDS's soft-shadow one renders them near-black here).
     /// </summary>
     public static class FaceRenderer
     {
         private const int Layer = 31;
 
-        public static string Render(FaceItem[] items, float eqScale, float scaleM, Vector3 eqOffset, float diameter, Color dark)
+        public static string Render(FaceItem[] items, float eqScale, float scaleM, Vector3 eqOffset, float diameter)
         {
             var root = new GameObject("Roundhead face");
             root.transform.position = new Vector3(-8000f, 8000f, 0f);
@@ -140,9 +141,9 @@ namespace CupRounds
             Camera cam = null;
             try
             {
-                int order = 0;
-                foreach (var fi in items)
+                for (int slot = 0; slot < items.Length; slot++)
                 {
+                    var fi = items[slot];
                     if (fi.item == null) continue;
                     GameObject obj = UnityEngine.Object.Instantiate(fi.item.gameObject, root.transform);
                     foreach (var mb in obj.GetComponentsInChildren<MonoBehaviour>(true)) mb.enabled = false;
@@ -152,10 +153,10 @@ namespace CupRounds
                     foreach (var r in obj.GetComponentsInChildren<SpriteRenderer>(true))
                     {
                         if (r.sprite == null && r.gameObject == obj) r.sprite = fi.item.sprite;
-                        Color c = r.color;
-                        if (c.r > 0.9f && c.g > 0.9f && c.b > 0.9f) r.color = new Color(dark.r, dark.g, dark.b, c.a);
-                        r.sortingOrder = order++;
+                        // ROUNDS's order (the item's sorting order), then the face's slots in turn for parts on the same order.
+                        r.sortingOrder = r.sortingOrder * items.Length + slot;
                     }
+                    FaceLook.Apply(obj);
                     foreach (var t in obj.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
                 }
                 var cgo = new GameObject("Roundhead face camera");
@@ -187,7 +188,9 @@ namespace CupRounds
             {
                 if (cam != null) { cam.targetTexture = null; UnityEngine.Object.Destroy(cam.gameObject); }
                 if (rt != null) RenderTexture.ReleaseTemporary(rt);
-                UnityEngine.Object.Destroy(root);
+                // At once: both players' faces are built in the same spot, often in the same frame (Destroy waits for the
+                // frame's end), and player 2's picture would show player 1's parts too.
+                UnityEngine.Object.DestroyImmediate(root);
             }
         }
     }
@@ -246,16 +249,13 @@ namespace CupRounds
                 var loader = CharacterCreatorItemLoader.instance ?? Resources.FindObjectsOfTypeAll<CharacterCreatorItemLoader>().FirstOrDefault();
                 if (face != null && loader != null)
                 {
-                    Color dark = Color.black;
-                    ColorUtility.TryParseHtmlString("#" + data.shade, out dark);
-                    dark = new Color(dark.r * 0.35f, dark.g * 0.35f, dark.b * 0.35f, 1f);
                     string png = FaceRenderer.Render(new[]
                     {
                         new FaceItem(Pick(loader.eyes, face.eyeID), face.eyeOffset),
                         new FaceItem(Pick(loader.mouths, face.mouthID), face.mouthOffset),
                         new FaceItem(Pick(loader.accessories, face.detailID), face.detailOffset),
                         new FaceItem(Pick(loader.accessories, face.detail2ID), face.detail2Offset)
-                    }, eqScale, scaleM, eqOffset, diameter, dark);
+                    }, eqScale, scaleM, eqOffset, diameter);
                     if (png != null)
                         data.faceParts = new[] { new SkinPart { png = png, x = 0f, y = 0f, w = 1f, h = 1f, color = "FFFFFFFF" } };
                 }

@@ -126,6 +126,49 @@
   Cuphead (AudioListener.pause), and keeps ROUNDS's music and ambience off (SoundVolumeManager.SetAudioMixerVolumes(1, 0, 1) every
   second, ROUNDS's own defaults for master and effects).
 
+## Faces (the launcher's face editor, ported from Vampire Rounds)
+- ROUNDS's faces: CharacterCreatorHandler.playerFaces[10] presets (PlayerPrefs eyeID-<n>, mouthID-<n>, detailID-<n>,
+  detail2ID-<n> + offsets; registry HKCU\Software\Landfall Games\ROUNDS, names with _h<hash>), selectedPlayerFaces[4] from
+  SelectedFace<player>. ROUNDS's menus show only the first 8, the editable ones.
+- faces.txt (`%LOCALAPPDATA%\CupRounds`, src/Shared/FaceFile.cs, also compiled into the launcher): "player1=<eyes id x y>
+  <mouth ...>  <detail ...>  <detail2 ...>"; a player with no line wears ROUNDS's own face for its player 1 or 2. The engine's
+  Faces.ApplyChoice (EnginePlugin.WaitForCards, before the EngineServer starts) puts them into selectedPlayerFaces in memory
+  only (no SelectFace, so ROUNDS's PlayerPrefs are untouched); the arena's players (GetFaceOffline), ROUNDS's pick screen
+  (CardChoiceVisuals.RPCA_SetFace), the world-map puppets (Puppet.Dress) and the look sent to Cuphead (SkinExport ->
+  FaceRenderer, drawn by Blob, MapBlob and the co-op ghost) all read it. An engine still running from before keeps the faces
+  it started with.
+- Colours: on a ROUNDS player the face parts use material SFUnshadowed (shader Sprites/SFSoftShadow), which shows colour only
+  under ROUNDS's soft-shadow light pass; the engine's cameras have none, so the parts came out near-black. FaceLook swaps it
+  for Unity's Sprites/Default on every equip (Harmony postfix on CharacterCreatorItemEquipper.Equip, hooks e_face_colours),
+  on the puppets and on FaceRenderer's copies. FaceRenderer also draws the parts in ROUNDS's order (sorting order, then slot)
+  instead of slot order, and Cuphead's blob no longer darkens white parts to the shade colour: the face arrives in ROUNDS's
+  own colours (dark features, coloured hats and details).
+- Pictures: the launcher (Faces.Draw) syncs the profile (GameRunner.SyncProfile, so the face mode is the shipped engine's)
+  and runs ROUNDS hidden with `--roundhead-engine --roundhead-faces`, its window kept off screen from the first frame
+  (GameRunner.KeepOutOfSight). The engine (Faces.DrawSheet; Awake returns right after starting it: no link, server or arena)
+  poses a Puppet per player, standing still and aiming right, hides the gun, clears the face parts and equips each of ROUNDS's
+  8 faces (ROUNDS's Equip skips a missing part and would leave the last face's), renders a 1.8-unit square around the head at
+  128 px into faces/seat<s>_face<n>.png; then the bare body (faces/parts/body<s>.png) and every CharacterCreatorItemLoader part
+  alone at offset 0 on layer 31 in the same frame (3 player scales around the equipper's itemParent, 512 px). parts.txt:
+  "frame F size N pxPerOffset P clamp 4.5", "part <kind> <i> <sortingOrder> <defX> <defY> <name>", "preset <i> <face>",
+  "selected <p> <n>"; pxPerOffset = size / frame x |itemParent.lossyScale.x| x scaleM (28.672 at 512). The launcher keeps a
+  signature of ROUNDS's face registry values and draws again when it changes; PLAY stops a drawing run first;
+  `CupRoundsLauncher.exe --draw-faces` draws without the window.
+- Launcher (FacesForm, FaceEditorForm, FaceParts): FaceParts lays a face together (body, then the parts by sorting order, each
+  moved by offset x pxPerOffset, y up). FACES shows each player's face with EDIT and the 8 ROUNDS faces to start from. The
+  editor has EYES / MOUTH / DETAIL 1 / DETAIL 2 grids (each part on the player's head) and drags the topmost part with paint
+  under the mouse; a newly chosen part starts at its own place (ROUNDS's SpawnItem) and offsets stay within 4.5 of the face's
+  centre (ROUNDS's CharacterCreatorDragging clamp). Reset positions, Undo changes, Cancel, Save.
+- FaceRenderer builds each face at the same spot and now removes it with DestroyImmediate: both players' looks are exported
+  in one EngineServer pump, and with Destroy (end of frame) player 2's picture also held player 1's parts (unseen while
+  both players wore the same ROUNDS face).
+- Verified 2026-10-20 on the real games (dev install, 12 Thunderstore mods in the profile): `--draw-faces` drew 16 face pictures
+  and 197 parts in 21 s, in colour (star, horns, top hat, blue sweat drop); the FACES window and the editor driven by posted
+  clicks and drags (a new mouth, the "R" hat and blue tears as details, the sunglasses dragged, Save wrote faces.txt; player 2
+  started from ROUNDS face 7; "Draw the pictures again" redrew in 17 s); a Melty-style test run on Botanic Panic passed every
+  check, and the world-map puppets, both ROUNDS players in the level, player 1's ghost and the pick screen wore their faces in
+  colour; the engine's look export for both players (skin op) gave each only its own face.
+
 ## Campaign flow (src/CupheadMod/GameFlow.cs)
 - One save slot: the title's Start goes straight into slot 1 (SlotSelectScreen.EnterGame) with the character the slot was saved
   with; slots 2 and 3 stay on disk and are never loaded, and there is no erase from inside Roundhead.

@@ -10,11 +10,11 @@ namespace CupRounds.Launcher
     /// <summary>The Roundhead launcher window: Thunderstore ROUNDS mods on the left, your profile on the right, Play at the bottom.</summary>
     public class MainForm : Form
     {
-        private static readonly Color Bg = Color.FromArgb(24, 22, 20);
-        private static readonly Color Panel = Color.FromArgb(36, 33, 30);
-        private static readonly Color Ink = Color.FromArgb(240, 232, 214);
-        private static readonly Color Orange = Color.FromArgb(255, 140, 26);
-        private static readonly Color Blue = Color.FromArgb(52, 128, 255);
+        internal static readonly Color Bg = Color.FromArgb(24, 22, 20);
+        internal static readonly Color Panel = Color.FromArgb(36, 33, 30);
+        internal static readonly Color Ink = Color.FromArgb(240, 232, 214);
+        internal static readonly Color Orange = Color.FromArgb(255, 140, 26);
+        internal static readonly Color Blue = Color.FromArgb(52, 128, 255);
 
         private readonly TextBox search = new TextBox();
         private readonly CheckBox cardsOnly = new CheckBox();
@@ -29,6 +29,7 @@ namespace CupRounds.Launcher
         private readonly Button importCodeBtn = new Button();
         private readonly Button importLocalBtn = new Button();
         private readonly Button playBtn = new Button();
+        private readonly Button facesBtn = new Button();
         private readonly Label status = new Label();
         private readonly TextBox log = new TextBox();
         private bool busy;
@@ -62,7 +63,7 @@ namespace CupRounds.Launcher
             if (InvokeRequired) BeginInvoke(a); else a();
         }
 
-        private Button Btn(Button b, string text, Color back)
+        internal static Button Btn(Button b, string text, Color back)
         {
             b.Text = text;
             b.FlatStyle = FlatStyle.Flat;
@@ -172,9 +173,17 @@ namespace CupRounds.Launcher
             playBtn.Location = new Point(ClientSize.Width - 236, ClientSize.Height - 130);
             playBtn.Click += (s, e) => StartPlay();
             Controls.Add(playBtn);
+            // Player 1's and player 2's faces, made of ROUNDS's own parts in the face editor (FacesForm).
+            Btn(facesBtn, "FACES", Blue);
+            facesBtn.Font = new Font("Segoe UI Black", 14f);
+            facesBtn.Size = new Size(130, 70);
+            facesBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            facesBtn.Location = new Point(ClientSize.Width - 236 - 146, ClientSize.Height - 130);
+            facesBtn.Click += (s, e) => { if (!busy) using (var f = new FacesForm()) f.ShowDialog(this); };
+            Controls.Add(facesBtn);
             status.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             status.Location = new Point(18, ClientSize.Height - 132);
-            status.Size = new Size(ClientSize.Width - 270, 22);
+            status.Size = new Size(ClientSize.Width - 416, 22);
             status.Font = new Font("Segoe UI Semibold", 10f);
             status.Text = "Loading...";
             Controls.Add(status);
@@ -186,7 +195,7 @@ namespace CupRounds.Launcher
             log.BorderStyle = BorderStyle.None;
             log.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             log.Location = new Point(18, ClientSize.Height - 104);
-            log.Size = new Size(ClientSize.Width - 270, 90);
+            log.Size = new Size(ClientSize.Width - 416, 90);
             Controls.Add(log);
         }
 
@@ -362,7 +371,7 @@ namespace CupRounds.Launcher
 
         private void SetButtons(bool on)
         {
-            foreach (var b in new[] { installBtn, removeBtn, updateBtn, importCodeBtn, importLocalBtn, playBtn }) b.Enabled = on;
+            foreach (var b in new[] { installBtn, removeBtn, updateBtn, importCodeBtn, importLocalBtn, playBtn, facesBtn }) b.Enabled = on;
         }
 
         private void StartPlay()

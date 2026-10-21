@@ -40,9 +40,16 @@
     {
       "id": "blob_face",
       "game": "rounds",
-      "what": "the player's own saved ROUNDS face (eyes, mouth, details), built and rendered by ROUNDS; worn in levels and on the world map",
-      "read": "CharacterCreatorHandler faces + CharacterCreatorItemLoader sprites",
+      "what": "each player's ROUNDS face (eyes, mouth, details): the one made in the launcher's face editor, else the player's own saved ROUNDS face; built and rendered by ROUNDS in its own colours; worn in levels, in card picks and on the world map",
+      "read": "CharacterCreatorHandler faces (the launcher's faces.txt put into its selectedPlayerFaces by Faces.ApplyChoice) + CharacterCreatorItemLoader sprites",
       "ipc": "skin"
+    },
+    {
+      "id": "face_parts",
+      "game": "rounds",
+      "what": "every ROUNDS face part (eyes, mouths, details), the player's eight saved faces and the bare ROUNDS body, as pictures for the launcher's face editor",
+      "read": "a hidden ROUNDS run (--roundhead-faces, Faces.DrawSheet) poses ROUNDS's own player as a puppet and renders them into %LOCALAPPDATA%/CupRounds/faces on the player's PC; nothing is shipped or uploaded",
+      "ipc": "none"
     },
     {
       "id": "blob_colors",

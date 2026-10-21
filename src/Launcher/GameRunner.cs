@@ -55,7 +55,7 @@ namespace CupRounds.Launcher
             return "--doorstop-enabled true --doorstop-target-assembly \"" + preloader + "\"";
         }
 
-        private static Process[] Running(string exe)
+        internal static Process[] Running(string exe)
         {
             string name = Path.GetFileNameWithoutExtension(exe);
             return Process.GetProcessesByName(name).Where(p =>
@@ -114,6 +114,7 @@ namespace CupRounds.Launcher
             if (!File.Exists(roundsExe)) throw new Exception("ROUNDS was not found at " + Paths.Rounds);
             if (!File.Exists(cupheadExe)) throw new Exception("Cuphead was not found at " + Paths.Cuphead);
             CheckRoundsBranch();
+            Faces.StopDrawing();
             if (Running(cupheadExe).Length > 0) throw new Exception("Cuphead is already open. Close it, then press Play.");
             if (Running(roundsExe).Length > 0 && !EngineReady()) throw new Exception("ROUNDS is already open. Close it, then press Play (Roundhead starts its own ROUNDS in the background).");
 
@@ -173,6 +174,42 @@ namespace CupRounds.Launcher
             }
             Say("Cuphead closed.");
             StopRounds();
+        }
+
+        private delegate bool EnumProc(IntPtr h, IntPtr l);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc f, IntPtr l);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern int GetWindowThreadProcessId(IntPtr h, out int pid);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr h);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr h, int index);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr h, int index, int value);
+
+        /// <summary>A ROUNDS started only to draw the faces still opens a window (in front, before the engine's WindowHider runs):
+        /// every window it shows is made a tool window that takes no focus and moved far off screen.</summary>
+        public static void KeepOutOfSight(Process p)
+        {
+            int pid;
+            try { pid = p.Id; } catch { return; }
+            var until = DateTime.UtcNow.AddSeconds(150);
+            while (DateTime.UtcNow < until)
+            {
+                try
+                {
+                    if (p.HasExited) return;
+                    EnumWindows((h, l) =>
+                    {
+                        GetWindowThreadProcessId(h, out int wp);
+                        if (wp != pid || !IsWindowVisible(h)) return true;
+                        int ex = GetWindowLong(h, -20);
+                        int want = (ex | 0x80 | 0x08000000) & ~0x40000; // tool window, no activate, not in the taskbar
+                        if (ex != want) SetWindowLong(h, -20, want);
+                        SetWindowPos(h, new IntPtr(1), -32000, -32000, 640, 360, 0x10 | 0x20);
+                        return true;
+                    }, IntPtr.Zero);
+                }
+                catch { }
+                Thread.Sleep(100);
+            }
         }
 
         /// <summary>

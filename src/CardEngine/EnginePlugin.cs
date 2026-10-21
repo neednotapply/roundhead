@@ -54,6 +54,8 @@ namespace CupRounds
                 Application.targetFrameRate = 60;
                 // Nothing inside the hidden engine may close it while Cuphead plays: the launcher and Exit() end it directly.
                 Application.wantsToQuit += () => { L.LogWarning("arena: ROUNDS asked to quit; ignored while it is Cuphead's card engine"); return false; };
+                // The launcher's face pictures: no Cuphead, no arena; it draws them and ends.
+                if (Faces.SheetMode) { L.LogInfo("faces: drawing the launcher's face pictures"); StartCoroutine(Faces.DrawSheet()); return; }
                 // Cuphead learns at once that ROUNDS is on its way (cards take a while): the result block beats with the sandbox off.
                 startingLink = ArenaLink.Open();
                 if (startingLink != null)
@@ -97,6 +99,8 @@ namespace CupRounds
             FlushLog();
             if (Environment.GetCommandLineArgs().Any(a => a == "--roundhead-dump")) Diagnostics.DumpPlayer();
             if (Environment.GetCommandLineArgs().Any(a => a == "--roundhead-dumpcards")) CardAudit.Dump();
+            // The launcher's faces before anything reads them: the look sent to Cuphead, the puppets, the arena's players.
+            Faces.ApplyChoice();
             server = new EngineServer();
             server.Start();
             Arena.Create(gameObject);
