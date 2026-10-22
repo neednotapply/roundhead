@@ -108,6 +108,9 @@ namespace CupRounds
                 {
                     Plugin.L.LogWarning("ROUNDS's pick screen did not come up (" + (gone ? "ROUNDS stopped answering" : "ROUNDS did not start the pick") + "): offering the cards here");
                     ArenaClient.CancelPick();
+                    // A ROUNDS that answers but ignores the pick is stuck the same way for the level after it: start it again
+                    // while the cards are offered here.
+                    if (ignored) ArenaClient.RestartEngine("it did not start a card pick in 10 s");
                     FallbackOffer(player);
                 }
                 return;

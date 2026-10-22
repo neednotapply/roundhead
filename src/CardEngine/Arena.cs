@@ -52,7 +52,7 @@ namespace CupRounds
         private int lastBeatValue = -1;
         private bool hadCuphead;
         private float nextPidCheck;
-        private bool paused;
+        private bool paused, lastCupheadAlive;
         private readonly float[] lastFeet = { float.NegativeInfinity, float.NegativeInfinity }; // per player body height, last FixedUpdate
         private readonly int[] life = new int[2]; // the last Cuphead life (EvSpawn) done per slot, echoed in Q_Life
         private readonly string[][] lastCards = new string[2][];
@@ -142,6 +142,12 @@ namespace CupRounds
             if (beat != lastBeatValue) { lastBeatValue = beat; lastControlBeat = Time.unscaledTime; }
             bool cupheadAlive = link.I(ArenaLink.C_Magic) == ArenaLink.Magic && Time.unscaledTime - lastControlBeat < 3f;
             if (cupheadAlive) hadCuphead = true;
+            // Logged, so a report shows when ROUNDS lost Cuphead's beat (its world then stands still and keeps the last mode).
+            if (cupheadAlive != lastCupheadAlive)
+            {
+                lastCupheadAlive = cupheadAlive;
+                EnginePlugin.L.LogInfo("arena: Cuphead " + (cupheadAlive ? "beating again" : "quiet for 3 s") + " (mode " + mode + ", phase " + phase + ")");
+            }
             // Only Cuphead's process going away ends this hidden ROUNDS. A Cuphead that stops beating for a while (alt-tab,
             // minimised, a long load) comes back, and ROUNDS's players must still be here when it does.
             if (EnginePlugin.Hidden && Time.unscaledTime > nextPidCheck)
@@ -160,7 +166,7 @@ namespace CupRounds
                 if (phase != Phase.Idle && mapGo == null) LoseWorld();
                 // The sandbox starts as soon as Cuphead is there, so the map's card pick can use ROUNDS's own pick screen.
                 if (cupheadAlive && phase == Phase.Idle) StartWorld();
-                if (phase == Phase.MapStarting && GameManager.instance != null && GameManager.instance.isPlaying && MapManager.instance.currentMap != null) phase = Phase.Ready;
+                if (phase == Phase.MapStarting && GameManager.instance != null && GameManager.instance.isPlaying && MapManager.instance.currentMap != null) { phase = Phase.Ready; EnginePlugin.L.LogInfo("arena: ROUNDS sandbox ready"); }
             });
 
             if (phase == Phase.Ready)

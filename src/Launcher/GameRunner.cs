@@ -138,6 +138,7 @@ namespace CupRounds.Launcher
             if (!engineUp)
             {
                 Say("Starting the ROUNDS card engine in the background with " + ProfileManager.Mods.Count(m => m.Enabled) + " Thunderstore mod(s)...");
+                KeepEngineLog();
                 RoundsProc = StartGame(roundsExe, RoundsAppId, roundsArgs, false);
                 DateTime until = DateTime.Now.AddSeconds(180);
                 while (!EngineReady() && !CupheadProc.HasExited)
@@ -159,6 +160,9 @@ namespace CupRounds.Launcher
                 Process r = RoundsProc;
                 if (r == null || !r.HasExited) continue;
                 Log.Write("The background ROUNDS stopped (exit code " + r.ExitCode + ")");
+                // The engine also ends itself when Cuphead is on its way out: a ROUNDS started then is closed again at once
+                // and its fresh log would replace the one that shows what happened.
+                if (CupheadProc.WaitForExit(4000)) break;
                 if (++restarts > 3) { Say("ROUNDS keeps stopping; see " + Path.Combine(Paths.ProfileBepInEx, "LogOutput.log")); RoundsProc = null; continue; }
                 try
                 {
@@ -167,6 +171,7 @@ namespace CupRounds.Launcher
                 catch { }
                 try
                 {
+                    KeepEngineLog();
                     RoundsProc = StartGame(roundsExe, RoundsAppId, roundsArgs, false);
                     if (!RoundsProc.HasExited) Say("Started the background ROUNDS again.");
                 }
@@ -174,6 +179,20 @@ namespace CupRounds.Launcher
             }
             Say("Cuphead closed.");
             StopRounds();
+        }
+
+        /// <summary>
+        /// BepInEx starts ROUNDS's LogOutput.log afresh with every start: the last engine's log is kept as engine-previous.log
+        /// in the data folder (beside launcher.log and engine-exit.log), so a report still shows the session that went wrong.
+        /// </summary>
+        private static void KeepEngineLog()
+        {
+            try
+            {
+                string log = Path.Combine(Paths.ProfileBepInEx, "LogOutput.log");
+                if (File.Exists(log) && new FileInfo(log).Length > 0) File.Copy(log, Path.Combine(Paths.Data, "engine-previous.log"), true);
+            }
+            catch (Exception e) { Log.Write("Could not keep the last ROUNDS log: " + e.Message); }
         }
 
         private delegate bool EnumProc(IntPtr h, IntPtr l);
