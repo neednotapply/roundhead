@@ -33,6 +33,10 @@ namespace CupRounds
         private const int SwitchWeaponButton = 5;
         private static readonly int[] life = new int[2];
         private static readonly float[] spawnSentAt = new float[2];
+        /// <summary>Since when ROUNDS has left this player's current life undone while answering (-1: done), and when that was
+        /// last looked at (a pause stops the looking, and the clock with it).</summary>
+        private static readonly float[] unsyncedSince = { -1f, -1f }, unsyncedSeenAt = { -100f, -100f };
+        private static int restartedPid;
         private static float lastRoundsSeen = -100f, levelSeenAt;
         private static int roundsPidSeen;
         private static bool wasLive;
@@ -384,7 +388,18 @@ namespace CupRounds
         /// death): the Cuphead player holds still and the spawn is sent again in case ROUNDS's player did not exist yet.</summary>
         private static bool InLife(ArenaSeat c)
         {
-            if (Synced(c)) return true;
+            int i = c.index;
+            if (Synced(c)) { unsyncedSince[i] = -1f; return true; }
+            float now = Time.unscaledTime;
+            if (unsyncedSince[i] < 0f || now - unsyncedSeenAt[i] > 1f) unsyncedSince[i] = now;
+            unsyncedSeenAt[i] = now;
+            // ROUNDS answers but never takes this life up (a player report: its player stayed parked under the level after a
+            // lost fight while Cuphead's waited at the start): a ROUNDS started again takes every life, card and pick up afresh.
+            if (now - unsyncedSince[i] > UnsyncedRestartSeconds)
+            {
+                unsyncedSince[i] = -1f;
+                RestartEngine("player " + (i + 1) + "'s new life was not taken up in " + UnsyncedRestartSeconds + " s");
+            }
             seenBlocks[c.index] = link.I(ArenaLink.RSlot(c.index) + ArenaLink.Q_Blocks);
             if (Time.unscaledTime - spawnSentAt[c.index] > 0.5f) SendSpawn(c);
             return false;
@@ -430,6 +445,23 @@ namespace CupRounds
         {
             life[c.index]++;
             SendSpawn(c);
+        }
+
+        private const float UnsyncedRestartSeconds = 25f;
+
+        /// <summary>
+        /// Ends a ROUNDS engine that answers but has stopped doing what Cuphead asks; the launcher starts it again (GameRunner.Play
+        /// restarts a background ROUNDS that stops while Cuphead runs) and the new one gets the lives, decks and any pick
+        /// (Tick, pid change). Once per engine process, so a slow new one is never ended while it catches up.
+        /// </summary>
+        public static void RestartEngine(string why)
+        {
+            int pid = RoundsPid;
+            if (pid <= 0 || pid == restartedPid) return;
+            restartedPid = pid;
+            Plugin.L.LogWarning("arena: ROUNDS engine " + pid + " is stuck (" + why + "); ending it so the launcher starts it again");
+            try { System.Diagnostics.Process.GetProcessById(pid).Kill(); }
+            catch (System.Exception e) { Plugin.L.LogWarning("arena: could not end ROUNDS engine " + pid + ": " + e.Message); }
         }
 
         private static void SendSpawn(ArenaSeat c)
