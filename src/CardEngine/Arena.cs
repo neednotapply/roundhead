@@ -24,6 +24,8 @@ namespace CupRounds
 
         /// <summary>The arena sits this far below ROUNDS's menu and card-pick area (ROUNDS units).</summary>
         public const float OffsetY = -1000f;
+        /// <summary>ROUNDS's own camera size: its menu, its card pick (as <see cref="ArenaRenderer"/> draws it) and its maps.</summary>
+        public const float RoundsOrtho = 20f;
         private const int PlatformLayer0 = 6, PlatformLayer1 = 7;
         /// <summary>Walls (layer 0), the bullets' copy of Cuphead floors (17, in every bullet mask and Sneaky's ground mask,
         /// never in ignoreWallsMask), and enemy hit areas (15, in every bullet mask).</summary>
@@ -325,6 +327,10 @@ namespace CupRounds
             mapGo.transform.position = Vector3.zero;
             var map = mapGo.AddComponent<Map>();
             map.wasSpawned = true;
+            // ROUNDS's camera zooms to the map's size (CameraZoomHandler, MapsExtended's CameraHandler). A Map's own default is
+            // 15; at ROUNDS's 20, mods that scale by the camera leave the pick screen as ROUNDS draws it (MapsExtended's
+            // CardVisuals.ChangeSelected postfix multiplies a card's scale by orthographicSize / 20).
+            map.size = RoundsOrtho;
             var sp = new GameObject("Spawn");
             sp.transform.SetParent(mapGo.transform, false);
             sp.transform.position = new Vector3(0f, OffsetY + 5f, 0f);
@@ -1372,7 +1378,7 @@ namespace CupRounds
                 // ROUNDS's own card pick view (its main camera frame).
                 camX = 0f;
                 camY = 0f;
-                ortho = 20f;
+                ortho = Arena.RoundsOrtho;
             }
             cam.transform.position = new Vector3(camX, camY, -100f);
             cam.orthographicSize = ortho;
@@ -1687,7 +1693,12 @@ namespace CupRounds
             Arena.I.RecordPicked(pickr, pickedCard.GetComponent<CardInfo>());
         }
 
-        /// <summary>ROUNDS's card pick, driven by the Cuphead player's keys, stick or mouse.</summary>
+        private static readonly AccessTools.FieldRef<CardVisuals, GeneralParticleSystem> VisPart = AccessTools.FieldRefAccess<CardVisuals, GeneralParticleSystem>("part");
+
+        /// <summary>ROUNDS's card pick, driven by the Cuphead player's keys, stick or mouse. A card hears about its selection only
+        /// when it changes, once its visuals have started (CardVisuals.ChangeSelected does nothing before Start sets 'part').
+        /// ROUNDS also re-sends one card every 0.2 s for its online clients; this sandbox has none, and a mod postfix on
+        /// ChangeSelected runs again on every re-send (MapsExtended's scale shrank the leftmost card again and again).</summary>
         [HarmonyPrefix, HarmonyPatch(typeof(CardChoice), "DoPlayerSelect")]
         public static bool PlayerSelect(CardChoice __instance)
         {
@@ -1704,18 +1715,13 @@ namespace CupRounds
             int mouse = a.MouseCard(slot, spawned, ArenaRenderer.PickCam);
             if (mouse >= 0) cur = mouse;
             cur = Mathf.Clamp(cur, 0, spawned.Count - 1);
-            float counter = t.Field("counter").GetValue<float>();
             for (int j = 0; j < spawned.Count; j++)
             {
                 if (spawned[j] == null) continue;
                 var vis = spawned[j].GetComponentInChildren<CardVisuals>();
-                if (vis != null && (vis.isSelected != (cur == j) || counter > 0.2f))
-                {
-                    counter = 0f;
+                if (vis != null && VisPart(vis) != null && vis.isSelected != (cur == j))
                     spawned[j].GetComponent<PhotonView>().RPC("RPCA_ChangeSelected", RpcTarget.All, cur == j);
-                }
             }
-            t.Field("counter").SetValue(counter);
             t.Field("currentlySelectedCard").SetValue(cur);
             bool busy = t.Field("isPlaying").GetValue<bool>();
             if (a.TakeAccept(slot) && !busy && spawned[cur] != null)

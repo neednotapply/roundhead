@@ -16,7 +16,7 @@ namespace CupRounds
     /// Runs inside ROUNDS while Roundhead plays: waits until ROUNDS (and any card mods) have loaded every card,
     /// then serves card lists, card renders, card math and the player's ROUNDS look to Cuphead over localhost.
     /// </summary>
-    [BepInPlugin("gg.melty.roundhead.cardengine", "Roundhead card engine", "0.1.5")]
+    [BepInPlugin("gg.melty.roundhead.cardengine", "Roundhead card engine", "0.1.6")]
     public class EnginePlugin : BaseUnityPlugin
     {
         public static EnginePlugin I;
@@ -50,6 +50,7 @@ namespace CupRounds
             if (Hidden)
             {
                 SteamQuiet.Apply();
+                ScreenQuiet.Apply();
                 AudioListener.volume = 0f; // until the arena plays at Cuphead's volume (Arena.Sound)
                 Application.targetFrameRate = 60;
                 // Nothing inside the hidden engine may close it while Cuphead plays: the launcher and Exit() end it directly.
@@ -222,39 +223,55 @@ namespace CupRounds
         }
     }
 
-    /// <summary>Keeps the ROUNDS window off screen and out of the taskbar while it works as the card engine.</summary>
+    /// <summary>Keeps the hidden ROUNDS's windows out of sight while it works as the card engine. Batch mode still makes one
+    /// (Unity.BatchModeWindow), blank; <see cref="ScreenQuiet"/> keeps ROUNDS from showing it full screen, and any of the
+    /// process's windows that shows anyway is hidden within a frame and made a tool window that takes no focus. The windows
+    /// are found by process id: Process.MainWindowHandle never found this one, so it stayed over the screen.</summary>
     public static class WindowHider
     {
         [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
         [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int index);
         [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int index, int value);
         [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int cmd);
-        [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT r);
+        [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc f, IntPtr l);
+        [DllImport("user32.dll")] private static extern int GetWindowThreadProcessId(IntPtr hWnd, out int pid);
 
-        [StructLayout(LayoutKind.Sequential)] private struct RECT { public int l, t, r, b; }
+        private delegate bool EnumProc(IntPtr hWnd, IntPtr l);
 
-        private static float next;
-        private static bool styled;
+        private static readonly List<IntPtr> windows = new List<IntPtr>();
+        private static readonly EnumProc collect = Collect; // kept alive while user32 calls it back
+        private static int pid;
+        private static float nextScan;
+        private static bool logged;
 
+        private static bool Collect(IntPtr h, IntPtr l)
+        {
+            int p;
+            GetWindowThreadProcessId(h, out p);
+            if (p == pid) windows.Add(h);
+            return true;
+        }
+
+        /// <summary>Every frame: the process's top-level windows (listed again once a second) that show are hidden.</summary>
         public static void Tick()
         {
-            if (Time.realtimeSinceStartup < next) return;
-            next = Time.realtimeSinceStartup + 1f;
-            IntPtr h = Process.GetCurrentProcess().MainWindowHandle;
-            if (h == IntPtr.Zero) return;
-            if (Screen.fullScreen) Screen.SetResolution(640, 360, false);
-            RECT r;
-            if (GetWindowRect(h, out r) && r.l > -30000)
+            if (Time.realtimeSinceStartup >= nextScan)
             {
-                if (!styled)
-                {
-                    const int GWL_EXSTYLE = -20, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x40000;
-                    ShowWindow(h, 0);
-                    SetWindowLong(h, GWL_EXSTYLE, (GetWindowLong(h, GWL_EXSTYLE) | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW);
-                    ShowWindow(h, 4);
-                    styled = true;
-                }
+                nextScan = Time.realtimeSinceStartup + 1f;
+                if (pid == 0) pid = Process.GetCurrentProcess().Id;
+                windows.Clear();
+                EnumWindows(collect, IntPtr.Zero);
+            }
+            for (int i = 0; i < windows.Count; i++)
+            {
+                IntPtr h = windows[i];
+                if (!IsWindowVisible(h)) continue;
+                const int GWL_EXSTYLE = -20, WS_EX_TOOLWINDOW = 0x80, WS_EX_APPWINDOW = 0x40000, WS_EX_NOACTIVATE = 0x08000000;
+                ShowWindow(h, 0);
+                SetWindowLong(h, GWL_EXSTYLE, (GetWindowLong(h, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) & ~WS_EX_APPWINDOW);
                 SetWindowPos(h, IntPtr.Zero, -32000, -32000, 640, 360, 0x0010 | 0x0004);
+                if (!logged) { logged = true; EnginePlugin.L.LogInfo("window: the hidden ROUNDS's window showed; hidden again"); }
             }
         }
     }

@@ -70,7 +70,12 @@
   LevelPlayerDeathEffect, PlayerJoinEffect). ROUNDS's death burst and revive pop-in are the visuals; the co-op death ghost
   becomes a RoundsGhost (the blob, see-through, in a parry-pink ring) on Cuphead's PlayerDeathEffect, whose parry switch,
   float and revive flow stay Cuphead's. Dev scenario ROUNDHEAD_DEV=revive checks the ghost and the revive.
-- Card picks use ROUNDS's CardChoice (DoPlayerSelect patched to read Cuphead's keys/stick/mouse), shown full screen.
+- Card picks use ROUNDS's CardChoice (DoPlayerSelect patched to read Cuphead's keys/stick/mouse), shown full screen. A card
+  is told its selection (RPCA_ChangeSelected) only when it changes and once its CardVisuals has started; ROUNDS's own loop
+  also re-sends one card every 0.2 s for online clients, and MapsExtended's CardVisuals.ChangeSelected postfix
+  (targetScale *= MainCam orthographicSize / 20) ran on every re-send, so the leftmost card shrank again and again.
+- The sandbox Map's size is ROUNDS's 20 (Arena.RoundsOrtho; a Map's own default is 15): ROUNDS's CameraZoomHandler and
+  MapsExtended's CameraHandler zoom MainCam to it, and mods that scale by MainCam's size see ROUNDS's standard view.
 - The card loop is ROUNDS's (sheets/progression.json, src/CupheadMod/Progress.cs): a level is a match. The game-over card
   (LevelGameOverGUI.In) gives each player a loss pick, made on the card before its menu answers (Hooks.GameOverMenu holds the
   menu while PickOverlay.HoldsGameOver); the deck is saved per slot and re-applied to ROUNDS's players (ArenaClient.SyncCards),
@@ -102,6 +107,13 @@
   Abyssal Countdown, Radiance, the aura cards, Shield Charge, Thruster, Remote, Teleport, screen-edge cards (the Cuphead
   view), and PCE / ModdingUtils cards (Glare, Low Ground, King Midas, Discombobulate, Laser, Super Jump, Demonic
   Possession). Murder's stacks are kept in the Roundhead save and spent by Cuphead (one boss phase per stack, next level).
+- MapsExtended (olavim, pulled in by many card packs, e.g. CR) swaps ScreenEdgeBounce.Update's camera for ROUNDS's map box
+  at the origin (its transpiler calls ScreenEdgeBounce_Patch.GetNormalizedMapPosition / NormalizedMapPositionToWorldPosition),
+  so the ArenaViewCam handed to the bullet in Start was never used: the arena is 1000 units below that box, every Bouncy,
+  Mayhem, Ring (CR, which adds Mayhem's A_ScreenEdge) or Super Ball bullet sat on its bottom edge on its first frame, and
+  RayHitReflect moved it up there, far above the level. ArenaModHooks prefixes both helpers in the arena: the box is the
+  Cuphead view (ArenaViewCam's viewport). Its OutOfBoundsHandler transpilers need nothing: our LateUpdate and GetPoint
+  prefixes skip those bodies in levels.
 - ROUNDS -> Cuphead: summed hits (kind and colour), an effect ring and a per-frame status table (ArenaLink: serial-last
   ring entries, a sequence lock on the table). Cuphead (src/CupheadMod/EnemyStatus.cs) shows them on real enemies:
   slower animations and per-enemy CupheadTime.WaitForSeconds, hit-pause for stun, dud projectiles while silenced, tints,
@@ -119,7 +131,13 @@
   drag 25).
 - Movement uses ROUNDS physics read from the prefab (force 17000, extraDrag 200, airControl 0.8, upForce 5500, gravityForce 1000, exponent 1.5),
   scaled 37 Cuphead units per ROUNDS unit.
-- The ROUNDS engine runs with -batchmode (no window) and starts after Cuphead, so Melty records Cuphead's window; test runs start Cuphead windowed.
+- The ROUNDS engine runs with -batchmode and starts after Cuphead, so Melty records Cuphead's window; test runs start Cuphead windowed.
+  Batch mode still makes a blank window (Unity.BatchModeWindow). ROUNDS's Optionshandler.ApplyOptions applied the player's
+  saved screen mode at start (Screen.SetResolution, e.g. 1360x768 FullScreenWindow): about 2 s in the window showed over the
+  whole screen, and about 10 s in it took the focus (seen 2026-10-22 with the engine alone; in that day's Melty test both
+  recordings were dark: it covered Cuphead). WindowHider looked for it with Process.MainWindowHandle, which never found it.
+  Now ScreenQuiet skips that one call in the hidden ROUNDS, and WindowHider lists the process's windows by id and hides any
+  that shows (tool window, no activate, off screen).
 - Sound: Unity's audio still runs in a batch-mode player (EnginePlugin.LogAudio logs the DSP clock moving and the output), so ROUNDS's
   sounds play from the hidden ROUNDS itself. Arena.Sound sets AudioListener.volume to Cuphead's sound-effects gain (C_Volume, from
   AudioManager.masterVolume + sfxOptionsVolume in dB), 0 on the map and menus (mode 0, where only the puppets move), pauses with

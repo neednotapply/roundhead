@@ -318,7 +318,7 @@
       "id": "e_card_select",
       "target": "ROUNDS CardChoice.DoPlayerSelect",
       "kind": "prefix",
-      "does": "ROUNDS's pick screen follows the Cuphead player's keys, stick or mouse",
+      "does": "ROUNDS's pick screen follows the Cuphead player's keys, stick or mouse; a card is told its selection only when it changes (no 0.2 s re-send: a mod's ChangeSelected postfix, MapsExtended's camera scale, ran again on each one and shrank the leftmost card)",
       "symbol": "ArenaPatches.PlayerSelect",
       "effects": "none"
     },
@@ -619,6 +619,22 @@
       "effects": "none"
     },
     {
+      "id": "m_maps_edge_place",
+      "target": "MapsExt.ScreenEdgeBounce_Patch.GetNormalizedMapPosition (runtime patch)",
+      "kind": "prefix",
+      "does": "with MapsExtended installed, screen-edge bullets (Bouncy, Mayhem, Ring, Super Ball...) are placed in the Cuphead view (ArenaViewCam) instead of ROUNDS's map box 1000 units above the arena, where they met its bottom edge on their first frame and were thrown above the level",
+      "symbol": "ArenaModHooks.EdgePlaceInCupheadView",
+      "effects": "none"
+    },
+    {
+      "id": "m_maps_edge_point",
+      "target": "MapsExt.ScreenEdgeBounce_Patch.NormalizedMapPositionToWorldPosition (runtime patch)",
+      "kind": "prefix",
+      "does": "with MapsExtended installed, a screen-edge bullet bounces at the edge point of the Cuphead view, not of ROUNDS's map box",
+      "symbol": "ArenaModHooks.EdgePointInCupheadView",
+      "effects": "none"
+    },
+    {
       "id": "m_thank_you",
       "target": "ROUNDS HealthHandler.TakeDamage",
       "kind": "prefix",
@@ -832,6 +848,14 @@
       "kind": "prefix",
       "does": "the hidden ROUNDS engine skips SteamAPI.Init (ROUNDS's manager stays, uninitialised, as after a failed Init), so Steam shows the player in Cuphead only instead of switching between the two games; ROUNDS started normally is untouched",
       "symbol": "SteamQuiet.SkipSteamInit",
+      "effects": "none"
+    },
+    {
+      "id": "e_screen_quiet",
+      "target": "ROUNDS Optionshandler.ApplyOptions",
+      "kind": "prefix",
+      "does": "the hidden ROUNDS (card engine, face drawing) skips ROUNDS's saved screen mode (Screen.SetResolution, usually full screen), which showed its blank batch-mode window over the whole screen in front of Cuphead and could take Cuphead's keyboard focus; vSync and ROUNDS's volumes still apply; ROUNDS started normally is untouched",
+      "symbol": "ScreenQuiet.NoScreenMode",
       "effects": "none"
     },
     {
