@@ -9,13 +9,15 @@ using UnityEngine;
 namespace CupRounds
 {
     /// <summary>
-    /// Patches on card mods' own classes (PCE, ModdingUtils), found by name at runtime so the engine has no build-time
-    /// dependency on any mod; a mod that is not installed is skipped silently. In ROUNDS these cards only ever look at
-    /// other ROUNDS players, which in Roundhead means the co-op partner (or nobody when solo). Each hook makes the card's
+    /// Patches on card mods' own classes (PCE, ModdingUtils, MapsExtended), found by name at runtime so the engine has no
+    /// build-time dependency on any mod; a mod that is not installed is skipped silently. In ROUNDS these cards only ever look
+    /// at other ROUNDS players, which in Roundhead means the co-op partner (or nobody when solo). Each hook makes the card's
     /// opponent effect land on Cuphead enemies instead (<see cref="CupheadTarget"/>), and never on the partner:
     /// Glare and Low Ground (InConeEffect), King Midas, Discombobulate, Murder, Laser, Super Jump, Demonic Possession's
     /// sky bullets and Thank You Sir. Masochist needs nothing here (Arena.ReadEvents EvBlockedHit reaches PCE's own
     /// HealthHandler.CallTakeDamage prefix) and Tractor Beam rides on the bullet's force (CupheadTarget.BulletStatuses).
+    /// MapsExtended, which many card packs pull in, measures screen-edge bullets in ROUNDS's map box; here that is the
+    /// Cuphead view.
     /// </summary>
     public static class ArenaModHooks
     {
@@ -33,6 +35,8 @@ namespace CupRounds
         private const float LaserMaxDistance = 1000f;
         /// <summary>A Cuphead ceiling this close over the sky spawn would swallow the nuke PCE fires upward.</summary>
         private const float NukeRoofCheck = 30f;
+        /// <summary>MapsExtended's ScreenEdgeBounce.Update transpiler class (MapsExtended 1.4).</summary>
+        private const string MapsEdge = "MapsExt.ScreenEdgeBounce_Patch";
 
         private static Type inCone, reversible, laserEffect, thankYou;
         private static MethodInfo pceStats, pceBlock, pceGun, muStats, zeroGGun, applyMods, clearMods;
@@ -97,9 +101,12 @@ namespace CupRounds
                 try { harmony.Patch(take, prefix: Hm(nameof(ThankYouCuphead))); applied++; }
                 catch (Exception e) { EnginePlugin.L.LogWarning("arena mod hook HealthHandler.TakeDamage: " + e.Message); }
             }
+            // MapsExtended's screen edges (its ScreenEdgeBounce.Update transpiler swaps the camera for these two)
+            Patch(harmony, MapsEdge, "GetNormalizedMapPosition", prefix: nameof(EdgePlaceInCupheadView));
+            Patch(harmony, MapsEdge, "NormalizedMapPositionToWorldPosition", prefix: nameof(EdgePointInCupheadView));
             // The Laser switch runs once per frame.
             if (Arena.I != null && Arena.I.GetComponent<ArenaModTicker>() == null) Arena.I.gameObject.AddComponent<ArenaModTicker>();
-            EnginePlugin.L.LogInfo("arena: mod hooks applied: " + applied + " (PCE " + (pceStats != null ? "found" : "absent") + ", ModdingUtils " + (muStats != null ? "found" : "absent") + ")");
+            EnginePlugin.L.LogInfo("arena: mod hooks applied: " + applied + " (PCE " + (pceStats != null ? "found" : "absent") + ", ModdingUtils " + (muStats != null ? "found" : "absent") + ", MapsExtended " + (ModType(MapsEdge) != null ? "found" : "absent") + ")");
         }
 
         /// <summary>A loaded type by full name, or null without any log (the mod is simply not installed).</summary>
@@ -533,6 +540,32 @@ namespace CupRounds
             float h = ortho / a.Scale, w = h * Mathf.Clamp(aspect, 0.5f, 4f);
             v = new Rect(c.x - w, c.y - h, 2f * w, 2f * h);
             return true;
+        }
+
+        // ------------------------------------------------------------------ MapsExtended screen edges
+
+        /// <summary>MapsExtended's ScreenEdgeBounce.Update places a bullet in ROUNDS's map box at the origin (71.12 x 40, or a
+        /// custom map's size) instead of through the camera ArenaTargetPatches.EdgeOnCupheadView hands it. The arena is 1000
+        /// units below that box, so every Bouncy, Mayhem, Ring or Super Ball bullet was at its bottom edge on its first frame and
+        /// was moved up there by the bounce (RayHitReflect puts the bullet on the hit point). In the arena the box is the
+        /// Cuphead view: the bullet's place in <see cref="ArenaViewCam"/>, clamped to it, as MapsExtended clamps to its box.</summary>
+        private static bool EdgePlaceInCupheadView(Vector3 worldPosition, ref Vector3 __result)
+        {
+            var cam = ArenaViewCam.Cam;
+            if (Arena.I == null || !Arena.I.WorldReady || cam == null) return true;
+            Vector3 v = cam.WorldToViewportPoint(worldPosition);
+            __result = new Vector3(Mathf.Clamp01(v.x), Mathf.Clamp01(v.y), 0f);
+            return false;
+        }
+
+        /// <summary>Back from that place to the world: the point of the Cuphead view there (the edge point the bullet bounces at).</summary>
+        private static bool EdgePointInCupheadView(Vector3 normalizedPosition, ref Vector3 __result)
+        {
+            var cam = ArenaViewCam.Cam;
+            if (Arena.I == null || !Arena.I.WorldReady || cam == null) return true;
+            Vector3 w = cam.ViewportToWorldPoint(new Vector3(normalizedPosition.x, normalizedPosition.y, -cam.transform.position.z));
+            __result = new Vector3(w.x, w.y, normalizedPosition.z);
+            return false;
         }
 
         // ------------------------------------------------------------------ Thank You Sir
